@@ -71,13 +71,13 @@ def delete_supplier(ID):
     except Exception as e:
         return flask.jsonify({"error": str(e)}), 500
 @supplier_bp.route('/search', methods=['POST'])
-def search_employee():
+def search_suppliers():
     try:
         keyword = flask.request.args.get('keyword', )
         cursor = conn.cursor()
-        sql = "select * from Supplier where SupplierName like ?"
+        sql = "select * from Supplier where SupplierName like ? or Address like ? or Email like ? or Phone like ?"
         search_term = f"%{keyword}%"
-        cursor.execute(sql, (search_term,))
+        cursor.execute(sql, (search_term, search_term, search_term, search_term,))
         return flask.jsonify(get_json_results(cursor)), 200
     except Exception as e:
         return flask.jsonify({'error': str(e)}), 400

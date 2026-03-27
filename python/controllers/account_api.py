@@ -31,3 +31,14 @@ def delete_account(id):
     except Exception as e:
         return flask.jsonify({"mess": str(e)}), 500
 
+@account_bp.route('/search', methods=['POST'])
+def search_accounts():
+    try:
+        keyword = flask.request.args.get('keyword', )
+        cursor = conn.cursor()
+        sql = "select * from Account where Username like ? or Role like ?"
+        search_term = f"%{keyword}%"
+        cursor.execute(sql, (search_term, search_term,))
+        return flask.jsonify(get_json_results(cursor)), 200
+    except Exception as e:
+        return flask.jsonify({'error': str(e)}), 400

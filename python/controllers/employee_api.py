@@ -83,13 +83,13 @@ def delete_employee(id):
         return flask.jsonify({"error": str(e)}), 500
 
 @employee_bp.route('/search', methods=['POST'])
-def search_employee():
+def search_employees():
     try:
         keyword = flask.request.args.get('keyword', )
         cursor = conn.cursor()
-        sql = "select * from Employee where FullName like ?"
+        sql = "select * from Employee where FullName like ? or Phone like ? or Email like ? or Role like ?"
         search_term = f"%{keyword}%"
-        cursor.execute(sql, (search_term,))
+        cursor.execute(sql, (search_term, search_term, search_term, search_term,))
         return flask.jsonify(get_json_results(cursor)), 200
     except Exception as e:
         return flask.jsonify({'error': str(e)}), 400

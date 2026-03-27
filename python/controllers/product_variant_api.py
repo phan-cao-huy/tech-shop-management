@@ -90,3 +90,14 @@ def delete_variant(ID):
         return flask.jsonify({"message": "Success!"}), 200
     except Exception as e:
         return flask.jsonify({"error": str(e)}), 500
+@variant_bp.route('/search', methods=['POST'])
+def search_products():
+    try:
+        keyword = flask.request.args.get('keyword', )
+        cursor = conn.cursor()
+        sql = "select * from ProductVariant where Color like ? or SellingPrice like ? or StockQuantity like ? or Description like ?"
+        search_term = f"%{keyword}%"
+        cursor.execute(sql, (search_term, search_term, search_term, search_term,))
+        return flask.jsonify(get_json_results(cursor)), 200
+    except Exception as e:
+        return flask.jsonify({'error': str(e)}), 400

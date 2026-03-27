@@ -115,3 +115,14 @@ def get_product_variant(ID):
             return flask.jsonify({"message":"Can't find this product variant!"}), 404
     except Exception as e:
         return flask.jsonify({"error": str(e)}), 500
+@product_bp.route('/search', methods=['POST'])
+def search_products():
+    try:
+        keyword = flask.request.args.get('keyword', )
+        cursor = conn.cursor()
+        sql = "select * from Product where ProductName like ? or Brand like ? or Information like ? or Status like ?"
+        search_term = f"%{keyword}%"
+        cursor.execute(sql, (search_term, search_term, search_term, search_term,))
+        return flask.jsonify(get_json_results(cursor)), 200
+    except Exception as e:
+        return flask.jsonify({'error': str(e)}), 400

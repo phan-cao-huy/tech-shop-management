@@ -77,7 +77,7 @@ def delete_category(ID):
         return flask.jsonify({"error": str(e)}), 500
 
 @category_bp.route('/search', methods=['POST'])
-def search_employee():
+def search_categories():
     try:
         keyword = flask.request.args.get('keyword', )
         cursor = conn.cursor()
