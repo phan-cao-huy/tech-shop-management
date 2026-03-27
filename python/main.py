@@ -654,7 +654,7 @@ def add_variant():
         if conn: conn.close()
 
 @app.route('/variants/<ID>', methods=['PUT'])
-def update_product(ID):
+def update_variant(ID):
     conn = None
     try:
         cursor = conn.cursor()
