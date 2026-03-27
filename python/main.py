@@ -2,12 +2,14 @@ import pyodbc
 import flask
 from flask_cors import CORS
 import uuid
+
 con_str = (
-    "Driver={SQL Server};"
-    "Server=localhost\\SQLEXPRESS;"
-    "Database=DuLieu;"
-    "Trusted_Connection=yes;"
-)
+        "DRIVER={SQL Server};"
+        "SERVER=localhost,1433;"
+        "DATABASE=DuLieu;"
+        "UID=sa;"
+        "PWD=dung0;"
+    )
 conn = pyodbc.connect(con_str)
 app = flask.Flask(__name__)
 CORS(app)
@@ -419,6 +421,555 @@ def top_products():
     cursor.execute(sql)
     return flask.jsonify(get_json_results(cursor)), 200
 
+# Dũng
+# Category
+@app.route('/categories', methods=['GET'])
+def get_all_category():
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT * FROM Category")
+        res = get_json_results(cursor)
+        if res:
+            return flask.jsonify(res), 200
+        else:
+            return flask.jsonify({"message":"Can't get all category!"}), 404
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+ 
 
+@app.route('/categories/<ID>', methods=['GET'])
+def get_category_by_id(ID):
+    cursor = conn.cursor()
+    try:
+        query = "SELECT * FROM Category ct WHERE ct.CategoryID = ?"
+        cursor.execute(query, (ID,))
+        res = get_json_results(cursor)
+        if res:
+            return flask.jsonify(res), 200
+        else:
+            return flask.jsonify({"message":"Can't find this category!"}), 404
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+ 
+
+@app.route('/categories', methods=['POST'])
+def add_categories():
+    cursor = conn.cursor()
+    try:
+        CategoryID = "CAT_" + str(uuid.uuid4())[:6]
+        Name = flask.request.json.get("Name")
+        cursor.execute("SELECT CategoryID FROM Category WHERE CategoryID = ?", (CategoryID,))
+        if cursor.fetchone():
+            return flask.jsonify({"message":"CategoryID already exists!"}), 400
+        query = "INSERT INTO Category(CategoryID, Name) VALUES(?, ?)"
+        cursor.execute(query, (CategoryID, Name))
+        conn.commit()
+        conn.close()
+        return flask.jsonify({"message":"Success!"}), 201
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+ 
+
+@app.route('/categories/<ID>', methods=['PUT'])
+def update_category(ID):
+    cursor = conn.cursor()
+    try:
+        Name = flask.request.json.get("Name")
+        query = "UPDATE Category SET Name = ? WHERE CategoryID = ?"
+        cursor.execute(query, (Name, ID))
+        conn.commit()
+        conn.close()
+        return flask.jsonify({"message":"Success!"}), 200
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+ 
+
+@app.route('/categories/<ID>', methods=['DELETE'])
+def delete_category(ID):
+    cursor = conn.cursor()
+    try:
+        query = "DELETE FROM Category WHERE CategoryID = ?"
+        cursor.execute(query, (ID,))
+        conn.commit()  
+        conn.close() 
+        return flask.jsonify({"message":"Success!"}), 200
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+ 
+# Product
+@app.route('/products', methods=['GET'])
+def get_all_product():
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT * FROM Product")
+        res = get_json_results(cursor)
+        if res:
+            return flask.jsonify(res), 200
+        else:
+            return flask.jsonify({"message":"Can't get all product!"}), 404
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+ 
+
+@app.route('/products/<ID>', methods=['GET'])
+def get_product_by_id(ID):
+    cursor = conn.cursor()
+    try:
+        query = "SELECT * FROM Product pr WHERE pr.ProductID = ?"
+        cursor.execute(query, (ID,))
+        res = get_json_results(cursor)
+        if res:
+            return flask.jsonify(res), 200
+        else:
+            return flask.jsonify({"message":"Can't find this product!"}), 404
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+ 
+
+@app.route('/products', methods=['POST'])
+def add_product():
+    cursor = conn.cursor()
+    try:
+        ProductID = "PRO_" + str(uuid.uuid4())[:6]
+        ProductName = flask.request.json.get("ProductName")
+        Brand = flask.request.json.get("Brand") 
+        CategoryID = "CAT_" + str(uuid.uuid4())[:6]
+        Description = flask.request.json.get("Description")
+        Image = flask.request.json.get("Image")
+        Information = flask.request.json.get("Information")
+        Status = flask.request.json.get("Status")
+        cursor.execute("SELECT ProductID FROM Product WHERE ProductID = ?", (ProductID,))
+        if cursor.fetchone():
+            return flask.jsonify({"message":"ProductID already exists!"}), 400
+        cursor.execute("SELECT ProductName FROM Product WHERE ProductName = ?", (ProductName,))
+        if cursor.fetchone():
+            return flask.jsonify({"message":"Product name already exist!"}), 400
+        query = """
+                INSERT INTO Product(ProductID, ProductName, Brand, 
+                Image, Description, Information, Status, CategoryID) 
+                VALUES(?, ?, ?, ?, ?, ?, ?, ?)
+                """
+        cursor.execute(query, (ProductID, ProductName, Brand, Image, Description, Information, Status, CategoryID))
+        conn.commit()
+        conn.close()
+        return flask.jsonify({"message":"Success!"}), 201
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+ 
+
+@app.route('/products/<ID>', methods=['PUT'])
+def update_product(ID):
+    cursor = conn.cursor()
+    try:
+        ProductName = flask.request.json.get("ProductName")
+        Brand = flask.request.json.get("Brand") 
+        Description = flask.request.json.get("Description")
+        Image = flask.request.json.get("Image")
+        Information = flask.request.json.get("Information")
+        Status = flask.request.json.get("Status")
+        query = """
+                UPDATE Product SET ProductName = ?, Brand = ?,Image = ?,
+                Description = ?, Information = ?, Status = ?
+                WHERE ProductID = ?
+                """
+        cursor.execute(query, (ProductName, Brand, Image, Description, Information, Status, ID))
+        conn.commit()
+        conn.close()
+        return flask.jsonify({"message":"Success!"}), 200
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+
+@app.route('/products/<ID>', methods=['DELETE'])
+def delete_product(ID):
+    cursor = conn.cursor()
+    try:
+        query = "DELETE FROM Product WHERE ProductID = ?"
+        cursor.execute(query, (ID,))
+        conn.commit()   
+        conn.close()
+        return flask.jsonify({"message":"Success!"}), 200
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+ 
+# Product Variant
+@app.route('/variants', methods=['GET'])
+def get_all_variant():
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT * FROM Productvariant")
+        res = get_json_results(cursor)
+        if res:
+            return flask.jsonify(res), 200
+        else:
+            return flask.jsonify({"message":"Can't get all product variant!"}), 404
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+ 
+
+@app.route('/variants/<ID>', methods=['GET'])
+def get_variant_by_id(ID):
+    cursor = conn.cursor()
+    try:
+        query = "SELECT * FROM Productvariant pv WHERE pv.ProductVariantID = ?"
+        cursor.execute(query, (ID,))
+        res = get_json_results(cursor)
+        return flask.jsonify(res), 200
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+ 
+
+@app.route('/variants', methods=['POST'])
+def add_variant():
+    cursor = conn.cursor()
+    try:
+        ProductVariantID = "VAR_" + str(uuid.uuid4())[:6]
+        ProductID = "PRO_" + str(uuid.uuid4())[:6]
+        Capacity = flask.request.json.get("Capacity") 
+        Color = flask.request.json.get("Color")
+        StockQuantity = flask.request.json.get("StockQuantity")
+        SellingPrice = flask.request.json.get("SellingPrice")
+        cursor.execute("SELECT ProductVariantID FROM ProductVariant WHERE ProductID = ?", (ProductVariantID,))
+        if cursor.fetchone():
+            return flask.jsonify({"message":"ProductVariantID already exist!"}), 400
+        query = """
+                INSERT INTO ProductVariant(ProductVariantID, ProductID, Color, Capacity,  
+                SellingPrice, StockQuantity) 
+                VALUES(?, ?, ?, ?, ?, ?)
+                """
+        cursor.execute(query, (ProductVariantID, ProductID, Color, Capacity, SellingPrice, StockQuantity))
+        conn.commit()
+        conn.close()
+        return flask.jsonify({"message":"Success!"}), 201
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+ 
+
+@app.route('/variants/<ID>', methods=['PUT'])
+def update_variant(ID):
+    cursor = conn.cursor()
+    try:
+        Capacity = flask.request.json.get("Capacity") 
+        Color = flask.request.json.get("Color")
+        StockQuantity = flask.request.json.get("StockQuantity")
+        SellingPrice = flask.request.json.get("SellingPrice")
+        query = """
+                UPDATE Productvariant SET Color = ?, Capacity = ?,
+                SellingPrice = ?, StockQuantity = ?
+                WHERE ProductVariantID = ?
+                """
+        cursor.execute(query, (Color, Capacity, SellingPrice, StockQuantity, ID))
+        conn.commit()
+        conn.close()
+        return flask.jsonify({"message":"Success!"}), 200
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+ 
+
+@app.route('/variants/<ID>', methods=['DELETE'])
+def delete_variant(ID):
+    cursor = conn.cursor()
+    try:
+        query = "DELETE FROM Productvariant WHERE ProductVariantID = ?"
+        cursor.execute(query, (ID,))
+        conn.commit() 
+        conn.close()  
+        return flask.jsonify({"message":"Success!"}), 200
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+ 
+
+@app.route('/products/<ID>/variants', methods=['GET'])
+def get_product_variant(ID):
+    cursor = conn.cursor()
+    try:
+        query = """
+                SELECT * FROM Productvariant pv 
+                JOIN Product pro ON pv.ProductID = pro.ProductID 
+                WHERE pv.ProductID = ?
+                """
+        cursor.execute(query, (ID,))
+        res = get_json_results(cursor)
+        if res:
+            return flask.jsonify(res), 200
+        else:
+            return flask.jsonify({"message":"Can't find this product variant!"}), 404
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+ 
+# Supplier
+@app.route('/suppliers', methods=['GET'])
+def get_all_supplier():
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT * FROM Supplier")
+        res = get_json_results(cursor)
+        if res:
+            return flask.jsonify(res), 200
+        else:
+            return flask.jsonify({"message":"Can't get all supplier!"}), 404
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+ 
+
+@app.route('/suppliers', methods=['POST'])
+def add_supplier():
+    cursor = conn.cursor()
+    try:
+        SupplierID = "SUP_" + str(uuid.uuid4())[:6]
+        SupplierName = flask.request.json.get("SupplierName")
+        Address = flask.request.json.get("Address") 
+        Phone = flask.request.json.get("Phone")
+        Email = flask.request.json.get("Email")
+        cursor.execute("SELECT SupplierID FROM Supplier WHERE SupplierID = ?", (SupplierID,))
+        if cursor.fetchone():
+            return flask.jsonify({"message":"SupplierID already exist!"}), 400
+        cursor.execute("SELECT SupplierName FROM Supplier WHERE SupplierName = ?", (SupplierName,))
+        if cursor.fetchone():
+            return flask.jsonify({"message":"Supplier name already exist!"}), 400
+        query = "INSERT INTO Supplier(SupplierID, SupplierName, Address, Phone, Email) VALUES(?, ?, ?, ?, ?)"
+        cursor.execute(query, (SupplierID, SupplierName, Address, Phone, Email))
+        conn.commit()
+        conn.close()
+        return flask.jsonify({"message":"Success!"}), 201
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+ 
+
+@app.route('/suppliers/<ID>', methods=['PUT'])
+def update_supplier(ID):
+    cursor = conn.cursor()
+    try:
+        SupplierName = flask.request.json.get("SupplierName")
+        Address = flask.request.json.get("Address") 
+        Phone = flask.request.json.get("Phone")
+        Email = flask.request.json.get("Email")
+        query = "UPDATE Supplier SET, SupplierName = ?, Address = ?, Phone = ?, Email = ? WHERE SupplierID = ?"
+        cursor.execute(query, (SupplierName, Address, Phone, Email, ID))
+        conn.commit()
+        conn.close()
+        return flask.jsonify({"message":"Success!"}), 200
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+ 
+
+@app.route('/suppliers/<ID>', methods=['DELETE'])
+def delete_supplier(ID):
+    cursor = conn.cursor()
+    try:
+        query = "DELETE FROM Supplier WHERE SupplierID = ?"
+        cursor.execute(query, (ID,))
+        conn.commit()  
+        conn.close() 
+        return flask.jsonify({"message":"Success!"}), 200
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+ 
+# Purchae Order
+@app.route('/purchase_orders', methods=['GET'])
+def get_all_purchase_order():
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT * FROM PurchaseOrder")
+        res = get_json_results(cursor)
+        if res:
+            return flask.jsonify(res), 200
+        else:
+            return flask.jsonify({"message":"Can't get all purchase order!"}), 404
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+ 
+
+@app.route('/purchase_orders/<ID>')
+def get_purchase_order_detail(ID):
+    cursor = conn.cursor()
+    try:
+        query = """
+                SELECT * FROM PurchaseOrder po JOIN PurchaseOrderDetail pod 
+                ON po.PurchaseOrderID = pod.PurchaseOrderID
+                WHERE po.PurchaseOrderID = ?
+                """
+        cursor.execute(query, (ID,))
+        res = get_json_results(cursor)
+        if res:
+            return flask.jsonify(res), 200
+        else:
+            return flask.jsonify({"message":"Can't find this purchase order detail!"}), 404
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+ 
+
+@app.route('/purchase_orders', methods=['POST'])
+def add_purchase_order():
+    cursor = conn.cursor()
+    try:
+        PurchaseOrderID = "PO_" + str(uuid.uuid4())[:6]
+        Status = flask.request.json.get("Status")
+        EmployeeID = flask.request.json.get("EmployeeID")
+        SupplierID = flask.request.json.get("SupplierID") 
+        cursor.execute("SELECT PurchaseOrderID FROM PurchaseOrder WHERE PurchaseOrderID = ?", (PurchaseOrderID,))
+        if cursor.fetchone():
+            return flask.jsonify({"message":"PurchaseOrderID already exist!"}), 400
+        query = """
+                INSERT INTO PurchaseOrder(PurchaseOrderID, SupplierID, EmployeeID,  Status) 
+                VALUES(?, ?, ?, ?)
+                """
+        cursor.execute(query, (PurchaseOrderID, SupplierID, EmployeeID, Status))
+        conn.commit()
+        conn.close()
+        return flask.jsonify({"message":"Success!"}), 201
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+ 
+
+@app.route('/purchase_orders/<ID>', methods=['PUT'])
+def update_purchase_order(ID):
+    cursor = conn.cursor()
+    try:
+        Status = flask.request.json.get("Status")
+        query = """
+                UPDATE PurchaseOrder SET Status = ?
+                WHERE PurchaseOrderID = ?
+                """
+        cursor.execute(query, (Status, ID))
+        conn.commit()
+        conn.close()
+        return flask.jsonify({"message":"Success!"}), 200
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+ 
+
+@app.route('/purchase_orders/<ID>', methods=['DELETE'])
+def delete_purchase_order(ID):
+    cursor = conn.cursor()
+    try:
+        query = "DELETE FROM PurchaseOrder WHERE PurchaseOrderID = ?"
+        cursor.execute(query, (ID,))
+        conn.commit()  
+        conn.close() 
+        return flask.jsonify({"message":"Success!"}), 200
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+ 
+
+@app.route('/purchase_orders/<ID>/confirm', methods=['POST'])
+def confirm_purchase_order(ID):
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT Status FROM PurchaseOrder WHERE PurchaseOrderID = ?", (ID,))
+        status_list = get_json_results(cursor)
+        if not status_list:
+            return flask.jsonify({"error": "Not found"}), 404
+        if status_list[0]['Status'] == 'Pending Payment':
+            return flask.jsonify({"error": "This order has been confirmed before"}), 400
+        cursor.execute("UPDATE PurchaseOrder SET Status = 'Pending Payment' WHERE PurchaseOrderID = ?", (ID,))   
+        update_stock_query = """
+            UPDATE pv
+            SET pv.StockQuantity = pv.StockQuantity + pod.NumOrder
+            FROM Productvariant pv
+            JOIN PurchaseOrderDetail pod ON pv.ProductVariantID = pod.ProductVariantID
+            WHERE pod.PurchaseOrderID = ?
+            """
+        cursor.execute(update_stock_query, (ID,))
+        conn.commit() 
+        conn.close()       
+        return flask.jsonify({"message": "Confirmed and stock updated successfully!"}), 200        
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return flask.jsonify({"error": str(e)}), 500    
+    finally:
+        if conn: 
+            conn.close()
+
+@app.route('/purchase_orders/<ID>/pay', methods=['POST'])
+def pay_purchase_order(ID):
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT Status FROM PurchaseOrder WHERE PurchaseOrderID = ?", (ID,))
+        status_list = get_json_results(cursor)
+        
+        if not status_list:
+            return flask.jsonify({"error": "Not found"}), 404
+        if status_list[0]['Status'] == 'Completed':
+            return flask.jsonify({"error": "This order has been payed before"}), 400
+        cursor.execute("UPDATE PurchaseOrder SET Status = 'Completed' WHERE PurchaseOrderID = ?", (ID,))
+        conn.commit() 
+        conn.close()       
+        return flask.jsonify({"message": "Confirmed and stock updated successfully!"}), 200        
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return flask.jsonify({"error": str(e)}), 500    
+    finally:
+        if conn: 
+            conn.close()
+# Purchase Order Detail
+@app.route('/purchase_order_details', methods=['GET'])
+def get_all_purchase_order_detail():
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT * FROM PurchaseOrderDetail")
+        res = get_json_results(cursor)
+        if res:
+            return flask.jsonify(res), 200
+        else:
+            return flask.jsonify({"message":"Can't get all purchase order detail!"}), 404
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+ 
+
+@app.route('/purchase_order_details', methods=['POST'])
+def add_purchase_order_detail():
+    cursor = conn.cursor()
+    try:
+        PurchaseOrderID = flask.request.json.get("PurchaseOrderID")
+        PurchaseOrderDetailID = "POD_" + str(uuid.uuid4())[:6] 
+        NumOrder = flask.request.json.get("NumOrder")
+        ProductVariantID = flask.request.json.get("ProductVariantID")
+        ImportPrice = flask.request.json.get("ImportPrice")
+        cursor.execute("SELECT PurchaseOrderDetailID FROM PurchaseOrderDetail WHERE PurchaseOrderDetailID = ?", (PurchaseOrderDetailID,))
+        if cursor.fetchone():
+            return flask.jsonify({"message":"PurchaseOrderDetailID already exist!"}), 400
+        query = """
+                INSERT INTO PurchaseOrderDetail(PurchaseOrderDetailID, PurchaseOrderID, 
+                ProductVariantID, NumOrder, ImportPrice) VALUES(?, ?, ?, ?, ?)
+                """
+        cursor.execute(query, (PurchaseOrderDetailID, PurchaseOrderID, ProductVariantID, NumOrder, ImportPrice))
+        conn.commit()
+        conn.close()
+        return flask.jsonify({"message":"Success!"}), 201
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+ 
+
+@app.route('/purchase_order_details/<ID>', methods=['PUT'])
+def update_purchase_order_detail(ID):
+    cursor = conn.cursor()
+    try:
+        NumOrder = flask.request.json.get("NumOrder")
+        ImportPrice = flask.request.json.get("ImportPrice")
+        query = """
+                UPDATE PurchaseOrderDetail SET NumOrder = ?,
+                ImportPrice = ? WHERE PurchaseOrderDetailID = ?
+                """
+        cursor.execute(query, (NumOrder, ImportPrice, ID))
+        conn.commit()
+        conn.close()
+        return flask.jsonify({"message":"Success!"}), 200
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+ 
+@app.route('/purchase_order_details/<ID>', methods=['DELETE'])
+def delete_purchase_order_detail(ID):
+    cursor = conn.cursor()
+    try:
+        query = "DELETE FROM PurchaseOrderDetail WHERE PurchaseOrderDetailID = ?"
+        cursor.execute(query, (ID,))
+        conn.commit()   
+        conn.close()
+        return flask.jsonify({"message":"Success!"}), 200
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500     
+ 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000, debug=True)
