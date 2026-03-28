@@ -36,7 +36,7 @@
             <i class="fas fa-file-export"></i> Xuất file
         </button>
         
-        <button class="btn text-white" title="Thêm nhân viên" style="background-color: #1b45cf; border: none;">
+        <button class="btn text-white" data-bs-toggle="modal" data-bs-target="#addEmployeeModal" title="Thêm nhân viên" title="Thêm nhân viên" style="background-color: #1b45cf; border: none;">
             <i class="fas fa-user-plus fa-lg me-1"></i> Thêm mới
         </button>
     </div>
@@ -57,111 +57,8 @@
                         <th class="text-center pe-3" width="15%">Hành động</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr>
-                        <td class="ps-3"><input type="checkbox" class="form-check-input"></td>
-                        <td><strong>EMP01</strong></td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="bg-primary text-white rounded-circle d-flex justify-content-center align-items-center me-2" style="width: 35px; height: 35px; font-weight: bold;">A</div>
-                                Trần Văn A
-                            </div>
-                        </td>
-                        <td>0901234567</td>
-                        <td>a.tran@shop.com</td>
-                        <td class="text-center">
-                            <span class="badge bg-danger rounded-pill px-3 py-2">Quản lý</span>
-                        </td>
-                        <td class="text-center pe-3">
-                            <button class="btn btn-sm btn-light text-primary" title="Phân quyền"><i class="fas fa-key"></i></button>
-                            <button class="btn btn-sm btn-light text-primary" title="Sửa"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-sm btn-light text-danger" title="Khóa/Nghỉ việc"><i class="fas fa-user-slash"></i></button>
-                        </td>
-                    </tr>
-                    
-                    <tr>
-                        <td class="ps-3"><input type="checkbox" class="form-check-input"></td>
-                        <td><strong>EMP02</strong></td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="bg-info text-white rounded-circle d-flex justify-content-center align-items-center me-2" style="width: 35px; height: 35px; font-weight: bold;">B</div>
-                                Nguyễn Thị B
-                            </div>
-                        </td>
-                        <td>0912345678</td>
-                        <td>b.nguyen@shop.com</td>
-                        <td class="text-center">
-                            <span class="badge bg-primary rounded-pill px-3 py-2">Bán hàng</span>
-                        </td>
-                        <td class="text-center pe-3">
-                            <button class="btn btn-sm btn-light text-primary" title="Phân quyền"><i class="fas fa-key"></i></button>
-                            <button class="btn btn-sm btn-light text-primary" title="Sửa"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-sm btn-light text-danger" title="Khóa/Nghỉ việc"><i class="fas fa-user-slash"></i></button>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td class="ps-3"><input type="checkbox" class="form-check-input"></td>
-                        <td><strong>EMP03</strong></td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="bg-secondary text-white rounded-circle d-flex justify-content-center align-items-center me-2" style="width: 35px; height: 35px; font-weight: bold;">C</div>
-                                Lê Văn C
-                            </div>
-                        </td>
-                        <td>0923456789</td>
-                        <td>c.le@shop.com</td>
-                        <td class="text-center">
-                            <span class="badge bg-dark rounded-pill px-3 py-2">Thủ kho</span>
-                        </td>
-                        <td class="text-center pe-3">
-                            <button class="btn btn-sm btn-light text-primary" title="Phân quyền"><i class="fas fa-key"></i></button>
-                            <button class="btn btn-sm btn-light text-primary" title="Sửa"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-sm btn-light text-danger" title="Khóa/Nghỉ việc"><i class="fas fa-user-slash"></i></button>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td class="ps-3"><input type="checkbox" class="form-check-input"></td>
-                        <td><strong>EMP04</strong></td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="bg-warning text-dark rounded-circle d-flex justify-content-center align-items-center me-2" style="width: 35px; height: 35px; font-weight: bold;">D</div>
-                                Phạm Thị D
-                            </div>
-                        </td>
-                        <td>0934567890</td>
-                        <td>d.pham@shop.com</td>
-                        <td class="text-center">
-                            <span class="badge bg-success rounded-pill px-3 py-2">Thu ngân</span>
-                        </td>
-                        <td class="text-center pe-3">
-                            <button class="btn btn-sm btn-light text-primary" title="Phân quyền"><i class="fas fa-key"></i></button>
-                            <button class="btn btn-sm btn-light text-primary" title="Sửa"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-sm btn-light text-danger" title="Khóa/Nghỉ việc"><i class="fas fa-user-slash"></i></button>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td class="ps-3"><input type="checkbox" class="form-check-input"></td>
-                        <td><strong>EMP05</strong></td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="bg-success text-white rounded-circle d-flex justify-content-center align-items-center me-2" style="width: 35px; height: 35px; font-weight: bold;">E</div>
-                                Hoàng Văn E
-                            </div>
-                        </td>
-                        <td>0945678901</td>
-                        <td>e.hoang@shop.com</td>
-                        <td class="text-center">
-                            <span class="badge bg-info text-dark rounded-pill px-3 py-2">Kỹ thuật</span>
-                        </td>
-                        <td class="text-center pe-3">
-                            <button class="btn btn-sm btn-light text-primary" title="Phân quyền"><i class="fas fa-key"></i></button>
-                            <button class="btn btn-sm btn-light text-primary" title="Sửa"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-sm btn-light text-danger" title="Khóa/Nghỉ việc"><i class="fas fa-user-slash"></i></button>
-                        </td>
-                    </tr>
+                <tbody id="employeeTableBody">
+                   
                 </tbody>
             </table>
         </div>
@@ -175,3 +72,7 @@
         </ul>
     </div>
 </div>
+@await Html.PartialAsync("_AddEmployeeModal")
+@section Scripts {
+    <script src="~/js/Admin-emp.js" asp-append-version="true"></script>
+}
