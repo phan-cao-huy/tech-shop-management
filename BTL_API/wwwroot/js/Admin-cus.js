@@ -94,7 +94,7 @@ function saveNewCustomer() {
     })
         .then(response => response.json())
         .then(result => {
-            if (result.mess === "Add Successful") { // Chú ý: Python trả về "Add Successful" viết hoa chữ S
+            if (result.mess === "Add Successful") { 
                 alert("Thêm khách hàng thành công!");
                 bootstrap.Modal.getInstance(document.getElementById('addCustomerModal')).hide();
                 document.getElementById('formAddCustomer').reset();
@@ -109,9 +109,7 @@ function saveNewCustomer() {
         });
 }
 
-// ==========================================
-// CÁC HÀM NÀY PHẢI NẰM RIÊNG BIỆT (KHÔNG LỒNG NHAU)
-// ==========================================
+
 function deleteCustomer(id) {
     if (!confirm(`Bạn có chắc chắn muốn xóa khách hàng [${id}]?`)) return;
 
