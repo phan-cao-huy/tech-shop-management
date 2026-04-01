@@ -28,17 +28,25 @@ def add_purchase_order_detail():
         NumOrder = flask.request.json.get("NumOrder")
         ProductVariantID = flask.request.json.get("ProductVariantID")
         ImportPrice = flask.request.json.get("ImportPrice")
+
         cursor.execute("SELECT PurchaseOrderDetailID FROM PurchaseOrderDetail WHERE PurchaseOrderDetailID = ?",
                        (PurchaseOrderDetailID,))
         if cursor.fetchone():
             return flask.jsonify({"message": "PurchaseOrderDetailID already exist!"}), 400
+        cursor.execute("SELECT PurchaseOrderID FROM PurchaseOrder WHERE PurchaseOrderID = ?", (PurchaseOrderID,))
+        if not cursor.fetchone():
+            return flask.jsonify({"message": "PurchaseOrder does not exist!"}), 400
+        cursor.execute("SELECT ProductVariantID FROM ProductVariant WHERE ProductVariantID = ?", (ProductVariantID,))
+        if not cursor.fetchone():
+            return flask.jsonify({"message": "ProductVariant does not exist!"}), 400
+        
         query = """
                 INSERT INTO PurchaseOrderDetail(PurchaseOrderDetailID, PurchaseOrderID, 
                 ProductVariantID, NumOrder, ImportPrice) VALUES(?, ?, ?, ?, ?)
                 """
         cursor.execute(query, (PurchaseOrderDetailID, PurchaseOrderID, ProductVariantID, NumOrder, ImportPrice))
         conn.commit()
-        conn.close()
+        
         return flask.jsonify({"message": "Success!"}), 201
     except Exception as e:
         return flask.jsonify({"error": str(e)}), 500
@@ -48,15 +56,24 @@ def add_purchase_order_detail():
 def update_purchase_order_detail(ID):
     cursor = conn.cursor()
     try:
+        PurchaseOrderID = flask.request.json.get("PurchaseOrderID")
+        ProductVariantID = flask.request.json.get("ProductVariantID")
         NumOrder = flask.request.json.get("NumOrder")
         ImportPrice = flask.request.json.get("ImportPrice")
+
+        cursor.execute("SELECT PurchaseOrderID FROM PurchaseOrder WHERE PurchaseOrderID = ?", (PurchaseOrderID,))
+        if not cursor.fetchone():
+            return flask.jsonify({"message": "PurchaseOrder does not exist!"}), 400
+        cursor.execute("SELECT ProductVariantID FROM ProductVariant WHERE ProductVariantID = ?", (ProductVariantID,))
+        if not cursor.fetchone():
+            return flask.jsonify({"message": "ProductVariant does not exist!"}), 400
+        
         query = """
                 UPDATE PurchaseOrderDetail SET NumOrder = ?,
                 ImportPrice = ? WHERE PurchaseOrderDetailID = ?
                 """
         cursor.execute(query, (NumOrder, ImportPrice, ID))
         conn.commit()
-        conn.close()
         return flask.jsonify({"message": "Success!"}), 200
     except Exception as e:
         return flask.jsonify({"error": str(e)}), 500
@@ -69,7 +86,7 @@ def delete_purchase_order_detail(ID):
         query = "DELETE FROM PurchaseOrderDetail WHERE PurchaseOrderDetailID = ?"
         cursor.execute(query, (ID,))
         conn.commit()
-        conn.close()
+        
         return flask.jsonify({"message": "Success!"}), 200
     except Exception as e:
         return flask.jsonify({"error": str(e)}), 500     
