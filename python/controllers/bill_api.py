@@ -9,7 +9,7 @@ def get_all_bills():
     cursor.execute('select * from Bill')
     return flask.jsonify(get_json_results(cursor)), 200
 
-@bill_bp.route('/get/<id>', methods = ['GET'])
+@bill_bp.route('/<id>', methods = ['GET'])
 def get_bill(id):
     cursor = conn.cursor()
     cursor.execute('select * from Bill where BillID = ?', (id,))
@@ -25,6 +25,14 @@ def create_bill():
         status = flask.request.json.get("Status", "Draft")
         total = flask.request.json.get("TotalPrice", 0)
         cursor = conn.cursor()
+        if cus_id:
+            cursor.execute("SELECT CustomerID FROM Customer WHERE CustomerID = ?", (cus_id,))
+            if not cursor.fetchone():
+                return flask.jsonify({"mess": f"Lỗi: Khách hàng mang mã '{cus_id}' không tồn tại!"}), 400
+
+            # 2. Bắt lỗi Khóa Ngoại: Kiểm tra Nhân viên có tồn tại không
+        if emp_id:
+            cursor.execute("SELECT EmployeeID FROM Employee WHERE EmployeeID = ?", (emp_id,))
         sql = "insert into Bill(BillID, CustomerID, EmployeeID, TotalPrice, PayMethod, Status) values (?, ?, ?, ?, ?, ?)"
         cursor.execute(sql, (bill_id, cus_id, emp_id, total, payment_method, status))
         conn.commit()

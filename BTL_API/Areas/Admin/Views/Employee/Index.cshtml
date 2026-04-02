@@ -29,9 +29,6 @@
             <input id="emp_search_input" type="text" class="form-control" placeholder="Tìm tên, SĐT..." aria-label="Search">
             <button class="btn btn-outline-secondary bg-white text-muted" type="button">
                 <i class="fas fa-search"></i>
-            <input type="text" class="form-control" placeholder="Tìm tên, SĐT..." aria-label="Search" id="searchInput" onkeyup="executeSearch()">
-            <button class="btn btn-outline-secondary bg-white text-muted" type="button" onclick="executeSearch()">
-                <i class="fas fa-search" ></i>
             </button>
         </div>
         
@@ -71,16 +68,16 @@
         </ul>
     </div>
 </div>
-<<<<<<< HEAD
+
 <script>
     function searchEmployees() {
        
     }
 </script>
-=======
+
 @await Html.PartialAsync("_AddEmployeeModal")
 @await Html.PartialAsync("_EditEmployeeModal")
 @section Scripts {
     <script src="~/js/Admin-emp.js" asp-append-version="true"></script>
 }
->>>>>>> 7925e523942af0d005d58ac1c8840dde5b7c53f0
+

@@ -8,7 +8,7 @@ supplier_bp = flask.Blueprint('supplier_bp', __name__)
 def get_all_supplier():
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT * FROM Supplier")
+        cursor.execute("SELECT * FROM Supplier where IsDeleted = 0")
         res = get_json_results(cursor)
         if res:
             return flask.jsonify(res), 200
@@ -52,6 +52,7 @@ def update_supplier(ID):
         Phone = flask.request.json.get("Phone")
         Email = flask.request.json.get("Email")
         query = "UPDATE Supplier SET SupplierName = ?, Address = ?, Phone = ?, Email = ? WHERE SupplierID = ?"
+        query = "UPDATE Supplier SET, SupplierName = ?, Address = ?, Phone = ?, Email = ? WHERE IsDeleted = 0 and SupplierID = ?"
         cursor.execute(query, (SupplierName, Address, Phone, Email, ID))
         conn.commit()
         
