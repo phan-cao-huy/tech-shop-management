@@ -1,5 +1,6 @@
 import flask
 import uuid
+import json
 from db_config import conn, get_json_results
 
 variant_bp = flask.Blueprint('variant_bp', __name__)
@@ -8,24 +9,61 @@ variant_bp = flask.Blueprint('variant_bp', __name__)
 def get_all_variant():
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT * FROM Productvariant")
-        res = get_json_results(cursor)
-        if res:
-            return flask.jsonify(res), 200
-        else:
-            return flask.jsonify({"message": "Can't get all product variant!"}), 404
+        cursor.execute("SELECT * FROM ProductVariant")
+        variants = get_json_results(cursor)
+        
+        for v in variants:
+            specs_str = v.get('Description')
+            if specs_str:
+                try:
+                    specs_dict = flask.json.loads(specs_str)
+                    for group_name, group_details in specs_dict.items():
+                        if isinstance(group_details, dict):
+                            for detail_key, detail_value in group_details.items():
+                                v[detail_key] = detail_value
+                        else:
+                            v[group_name] = group_details
+                except json.JSONDecodeError:
+                    pass 
+            if 'Description' in v:
+                del v['Description']
+                
+        cursor.close()
+        return flask.jsonify(variants), 200
+        
     except Exception as e:
+        if cursor:
+            cursor.close()
         return flask.jsonify({"error": str(e)}), 500
 
 @variant_bp.route('/<ID>', methods=['GET'])
 def get_variant_by_id(ID):
     cursor = conn.cursor()
     try:
-        query = "SELECT * FROM Productvariant WHERE ProductVariantID = ?"
-        cursor.execute(query, (ID,))
-        res = get_json_results(cursor)
-        return flask.jsonify(res), 200
+        cursor.execute("SELECT * FROM ProductVariant WHERE ProductVariantID = ?", (ID,))
+        variants = get_json_results(cursor)
+        variant = variants[0]
+        specs_str = variant.get('Description')
+        if specs_str:
+            try:
+                specs_dict = flask.json.loads(specs_str)
+                for group_name, group_details in specs_dict.items():
+                    if isinstance(group_details, dict):
+                        for detail_key, detail_value in group_details.items():
+                            variant[detail_key] = detail_value
+                    else:
+                        variant[group_name] = group_details
+            except json.JSONDecodeError:
+                pass 
+            if 'Description' in variant:
+                del variant['Description']
+                
+        cursor.close()
+        return flask.jsonify(variants), 200
+        
     except Exception as e:
+        if cursor:
+            cursor.close()
         return flask.jsonify({"error": str(e)}), 500
 
 @variant_bp.route('/add', methods=['POST'])
@@ -37,9 +75,18 @@ def add_variant():
         Color = flask.request.json.get("Color")
         StockQuantity = flask.request.json.get("StockQuantity")
         SellingPrice = flask.request.json.get("SellingPrice")
-        Description = flask.request.json.get("SellingPrice")
-        isDelete = 0
+        Images = flask.request.json.get("Images")
+        IsDeleted = flask.request.json.get("IsDeleted")
+        Status = flask.request.json.get("Status")
+        des_dict = flask.request.json.copy()
+        
+        main_columns = ["ProductVariantID", "ProductID", "Color", "SellingPrice", "StockQuantity", "IsDeleted", "Images", "Status"]
+        
+        for col in main_columns:
+            des_dict.pop(col, None)
 
+        Description = flask.json.dumps(des_dict, ensure_ascii=False) if des_dict else None        
+        
         cursor.execute("SELECT ProductVariantID FROM ProductVariant WHERE ProductVariantID = ?", (ProductVariantID,))
         if cursor.fetchone():
             return flask.jsonify({"message": "ProductVariantID already exist!"}), 400
@@ -48,11 +95,11 @@ def add_variant():
             return flask.jsonify({"message": "Product does not exist!"}), 400
         
         query = """
-                INSERT INTO ProductVariant(ProductVariantID, ProductID, Color,  
-                SellingPrice, StockQuantity, Description, isDelete) 
-                VALUES(?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO ProductVariant(ProductVariantID, ProductID, Color, SellingPrice,
+                StockQuantity, Description, IsDeleted, Images, Status) 
+                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """
-        cursor.execute(query, (ProductVariantID, ProductID, Color, SellingPrice, StockQuantity, Description, isDelete))
+        cursor.execute(query, (ProductVariantID, ProductID, Color, SellingPrice, StockQuantity, Description, IsDeleted, Images, Status))
         conn.commit()   
         return flask.jsonify({"message": "Success!"}), 201
     except Exception as e:
@@ -69,14 +116,24 @@ def update_variant(ID):
         Color = flask.request.json.get("Color")
         StockQuantity = flask.request.json.get("StockQuantity")
         SellingPrice = flask.request.json.get("SellingPrice")
-        Description = flask.request.json.get("Description")
+        Images = flask.request.json.get("Images")
+        Status = flask.request.json.get("Status")
+        
+        des_dict = flask.request.json.copy()
+        
+        main_columns = ["ProductVariantID", "ProductID", "Color", "SellingPrice", "StockQuantity", "IsDeleted", "Images", "Status"]
+        
+        for col in main_columns:
+            des_dict.pop(col, None)
+
+        Description = flask.json.dumps(des_dict, ensure_ascii=False) if des_dict else None      
 
         query = """
                 UPDATE Productvariant SET ProductID = ?, Color = ?,
-                SellingPrice = ?, StockQuantity = ?, Description = ?
+                SellingPrice = ?, StockQuantity = ?, Description = ?, Images = ?, Status = ?
                 WHERE ProductVariantID = ?
                 """
-        cursor.execute(query, (ProductID, Color, SellingPrice, StockQuantity, Description, ID))
+        cursor.execute(query, (ProductID, Color, SellingPrice, StockQuantity, Description, Images, Status, ID))
         conn.commit()
         
         return flask.jsonify({"message": "Success!"}), 200
@@ -84,11 +141,11 @@ def update_variant(ID):
         return flask.jsonify({"error": str(e)}), 500
 
 
-@variant_bp.route('/delete/<ID>', methods=['DELETE'])
+@variant_bp.route('/delete/<ID>', methods=['PUT'])
 def delete_variant(ID):
     cursor = conn.cursor()
     try:
-        query = "UPDATE FROM Productvariant SET isDelete = 1 WHERE ProductVariantID = ?"
+        query = "UPDATE Productvariant SET IsDeleted = 1 WHERE ProductVariantID = ?"
         cursor.execute(query, (ID,))
         conn.commit()
         
