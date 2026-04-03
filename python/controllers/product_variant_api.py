@@ -113,7 +113,7 @@ def add_variant():
     db_conn = get_connection()
     cursor = db_conn.cursor()
     try:
-        ProductVariantID = "VAR_" + str(uuid.uuid4())[:6]
+        ProductVariantID = generate_new_id(cursor, "ProductVariant", "ProductVariantID", "VAR")
         ProductID = flask.request.json.get("ProductID")
         Color = flask.request.json.get("Color")
         StockQuantity = flask.request.json.get("StockQuantity")

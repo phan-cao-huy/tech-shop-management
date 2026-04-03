@@ -44,7 +44,7 @@ def add_purchase_order():
     db_conn = get_connection()
     cursor = db_conn.cursor()
     try:
-        PurchaseOrderID = "PO_" + str(uuid.uuid4())[:6]
+        PurchaseOrderID = generate_new_id(cursor, "PurchaseOrder", "PurchaseOrderID", "PO")
         Status = flask.request.json.get("Status")
         EmployeeID = flask.request.json.get("EmployeeID")
         SupplierID = flask.request.json.get("SupplierID")

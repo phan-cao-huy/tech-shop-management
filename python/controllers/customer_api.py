@@ -20,8 +20,9 @@ def get_customer(id):
 @customer_bp.route('/add', methods = ['POST'])
 def add_customer():
     try:
-        customer_id = "CUS_" + str(uuid.uuid4())[:6]
-        account_id = "ACC_" + str(uuid.uuid4())[:6]
+        cursor = conn.cursor()
+        customer_id = generate_new_id(cursor, "Customer", "CustomerID", "CUS")
+        account_id = generate_new_id(cursor, "Account", "AccountID", "ACC")
         username = flask.request.json.get("Username")
         password = flask.request.json.get("Password")
         fullname = flask.request.json.get("FullName")

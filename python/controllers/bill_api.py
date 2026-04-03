@@ -20,7 +20,8 @@ def get_bill(id):
 @bill_bp.route('/add', methods = ['POST'])
 def create_bill():
     try:
-        bill_id = "BILL_" + str(uuid.uuid4())[:6]
+        cursor = conn.cursor()
+        bill_id = generate_new_id(cursor, "Bill", "BillID", "BIL")
         cus_id = flask.request.json.get("CustomerID")
         emp_id = flask.request.json.get("EmployeeID")
         payment_method = flask.request.json.get("PaymentMethod")
@@ -93,5 +94,5 @@ def check_stock(id):
     stock = cursor.fetchone()
     if stock:
         return flask.jsonify({"ProductVariantID": id,
-                              "StockQuanity": stock[0]}), 200
+                              "StockQuantity": stock[0]}), 200
     return flask.jsonify({"error": "Product not found"}), 404

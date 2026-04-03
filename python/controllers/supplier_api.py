@@ -26,7 +26,7 @@ def add_supplier():
     db_conn = get_connection()
     cursor = db_conn.cursor()
     try:
-        SupplierID = "SUP_" + str(uuid.uuid4())[:6]
+        SupplierID = generate_new_id(cursor, "Supplier", "SupplierID", "SUP")
         SupplierName = flask.request.json.get("SupplierName")
         Address = flask.request.json.get("Address")
         Phone = flask.request.json.get("Phone")

@@ -26,7 +26,7 @@ def add_purchase_order_detail():
     cursor = db_conn.cursor()
     try:
         PurchaseOrderID = flask.request.json.get("PurchaseOrderID")
-        PurchaseOrderDetailID = "POD_" + str(uuid.uuid4())[:6]
+        PurchaseOrderDetailID = generate_new_id(cursor, "PurchaseOrderDetail", "PurchaseOrderDetailID", "POD")
         NumOrder = flask.request.json.get("NumOrder")
         ProductVariantID = flask.request.json.get("ProductVariantID")
         ImportPrice = flask.request.json.get("ImportPrice")

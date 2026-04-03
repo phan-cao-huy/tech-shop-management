@@ -43,23 +43,23 @@ function executeProdSearch() {
 // ==========================================
 // 3. HÀM VẼ BẢNG
 // ==========================================
+// ==========================================
+// 3. HÀM VẼ BẢNG & XỬ LÝ NHIỀU ẢNH JSON
+// ==========================================
 function renderProdTable() {
     const tableBody = document.getElementById('productTableBody');
     let htmlContent = '';
 
-    // Kiểm tra nếu mảng trống
     if (!currentProdData || currentProdData.length === 0) {
         tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4"><i>Không tìm thấy sản phẩm nào.</i></td></tr>`;
         document.querySelector('.pagination-prod').innerHTML = '';
         return;
     }
 
-    // Phân trang
     let startIndex = (currentProdPage - 1) * prodRowsPerPage;
     let endIndex = startIndex + prodRowsPerPage;
     let paginatedData = currentProdData.slice(startIndex, endIndex);
 
-    // VÒNG LẶP
     paginatedData.forEach(prod => {
         // Đã fix: Gọi đúng prod.Image theo SQL của mày
         let imagesHtml = renderImageJson(prod.Images);
@@ -75,6 +75,11 @@ function renderProdTable() {
                 <td class="fw-bold text-dark">${prod.ProductName}</td>
                 <td>${prod.Brand || ''}</td>
                 
+                <td>${infoHtml}</td>
+                
+                <td class="text-center">
+                    <span class="badge bg-success rounded-pill px-3">Active</span>
+                </td>
                 <td class="text-center pe-3">
                     <button class="btn btn-sm btn-primary me-1" title="Quản lý biến thể"
                         onclick="window.location.href='/Admin/VariantProduct/Index?productId=${prod.ProductID}'">
