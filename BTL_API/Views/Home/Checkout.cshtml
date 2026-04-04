@@ -1,0 +1,17 @@
+@{
+    ViewData["Title"] = "Thanh toán";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="checkout-page">
+    <h2 class="section-title" style="margin-top:.5rem"><i class="bi bi-bag-check"></i> Thanh toán</h2>
+    <div id="checkoutContainer">
+        <div class="spinner"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', () => { loadCheckoutPage(); });
+    </script>
+}

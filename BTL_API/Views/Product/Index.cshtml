@@ -1,5 +1,21 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
-@{
+﻿@{
+    ViewData["Title"] = "Sản phẩm";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<section class="page-container">
+    <h2 class="section-title"><i class="bi bi-grid-3x3-gap-fill"></i> Tất cả sản phẩm</h2>
+
+    <div class="category-pills" id="categoryPills">
+        <div class="skeleton" style="width:80px;height:34px;border-radius:99px"></div>
+        <div class="skeleton" style="width:100px;height:34px;border-radius:99px"></div>
+    </div>
+
+    <div class="product-grid" id="productGrid"></div>
+</section>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', () => { loadStorefront(); });
+    </script>
 }

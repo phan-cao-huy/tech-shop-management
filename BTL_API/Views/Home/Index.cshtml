@@ -1,5 +1,40 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Trang chủ";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-<h1>Group 9</h1>
+
+<!-- Hero -->
+<section class="hero">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-7">
+                <h1>Công nghệ đỉnh cao,<br />giá cả hợp lý</h1>
+                <p>Khám phá các sản phẩm điện thoại, phụ kiện công nghệ chính hãng mới nhất với chương trình ưu đãi hấp dẫn.</p>
+                <a href="#products" class="hero-btn">
+                    <i class="bi bi-grid"></i> Khám phá ngay
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Products -->
+<section class="page-container" id="products">
+    <h2 class="section-title"><i class="bi bi-grid-3x3-gap-fill"></i> Sản phẩm</h2>
+
+    <div class="category-pills" id="categoryPills">
+        <div class="skeleton" style="width:80px;height:34px;border-radius:99px"></div>
+        <div class="skeleton" style="width:100px;height:34px;border-radius:99px"></div>
+        <div class="skeleton" style="width:90px;height:34px;border-radius:99px"></div>
+    </div>
+
+    <div class="product-grid" id="productGrid"></div>
+</section>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStorefront();
+        });
+    </script>
+}

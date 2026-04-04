@@ -1,0 +1,17 @@
+@{
+    ViewData["Title"] = "Giỏ hàng";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="cart-page">
+    <h2 class="section-title" style="margin-top:.5rem"><i class="bi bi-cart3"></i> Giỏ hàng</h2>
+    <div id="cartContainer">
+        <div class="spinner"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', () => { loadCartPage(); });
+    </script>
+}

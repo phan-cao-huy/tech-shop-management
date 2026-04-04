@@ -1,0 +1,17 @@
+@{
+    ViewData["Title"] = "Đơn hàng";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="orders-page">
+    <h2 class="section-title" style="margin-top:.5rem"><i class="bi bi-receipt"></i> Lịch sử đơn hàng</h2>
+    <div id="ordersContainer">
+        <div class="spinner"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', () => { loadOrdersPage(); });
+    </script>
+}

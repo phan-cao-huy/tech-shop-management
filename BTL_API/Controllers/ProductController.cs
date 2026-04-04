@@ -8,5 +8,11 @@ namespace BTL_API.Controllers
         {
             return View();
         }
+
+        public IActionResult Detail(string id)
+        {
+            ViewData["ProductID"] = id;
+            return View();
+        }
     }
 }

@@ -1,0 +1,30 @@
+@{
+    ViewData["Title"] = "Chi tiết sản phẩm";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="detail-container">
+    <div style="margin-bottom:1rem">
+        <a href="/" class="btn-outline" style="font-size:.85rem;padding:.4rem .85rem">
+            <i class="bi bi-arrow-left"></i> Quay lại
+        </a>
+    </div>
+    <div id="productDetail">
+        <div class="spinner"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const productId = params.get('id');
+            if (productId) {
+                loadProductDetail(productId);
+            } else {
+                document.getElementById('productDetail').innerHTML =
+                    '<p class="text-muted" style="text-align:center;padding:3rem">Không có mã sản phẩm.</p>';
+            }
+        });
+    </script>
+}
