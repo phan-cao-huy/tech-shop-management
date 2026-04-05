@@ -1,15 +1,14 @@
 ﻿let currentAccData = [];
 let currentAccPage = 1;
 const accRowsPerPage = 5;
-let currentEditAccId = null; // Biến lưu ID tài khoản đang được sửa mật khẩu
+let currentEditAccId = null; 
 
 document.addEventListener("DOMContentLoaded", function () {
     loadAccounts();
 });
 
-// ==========================================
-// 1. TẢI VÀ TÌM KIẾM TÀI KHOẢN
-// ==========================================
+
+// TẢI VÀ TÌM KIẾM TÀI KHOẢN
 function loadAccounts() {
     document.getElementById('accSearchInput').value = '';
     fetch('http://127.0.0.1:5000/accounts/getall')
@@ -43,9 +42,9 @@ function searchAccounts() {
         .catch(err => showError(err.message));
 }
 
-// ==========================================
-// 2. VẼ BẢNG & PHÂN TRANG
-// ==========================================
+
+// VẼ BẢNG & PHÂN TRANG
+
 function renderAccountTable() {
     const tbody = document.getElementById('accountTableBody');
     if (!currentAccData || currentAccData.length === 0) {
@@ -113,9 +112,9 @@ function showError(msg) {
     document.getElementById('accountTableBody').innerHTML = `<tr><td colspan="6" class="text-center text-danger">Lỗi Backend: ${msg}</td></tr>`;
 }
 
-// ==========================================
-// 3. THÊM TÀI KHOẢN MỚI
-// ==========================================
+
+// THÊM TÀI KHOẢN MỚI
+
 function openAddAccountModal() {
     document.getElementById('addAccFullName').value = '';
     document.getElementById('addAccUsername').value = '';
@@ -147,15 +146,15 @@ function submitAddAccount() {
             if (result.status === 201 || result.status === 200) {
                 alert("Thêm tài khoản thành công! Mã tự động đã được cấp.");
                 bootstrap.Modal.getInstance(document.getElementById('addAccountModal')).hide();
-                loadAccounts(); // Tải lại bảng để xem acc mới
+                loadAccounts(); 
             } else {
                 alert("Lỗi: " + (result.body.mess || result.body.error));
             }
         })
         .catch(err => alert("Lỗi kết nối: " + err.message));
-}S// ==========================================
-// 4. ĐỔI MẬT KHẨU TÀI KHOẢN
-// ==========================================
+}
+// ĐỔI MẬT KHẨU TÀI KHOẢN
+
 function openEditAccountModal(accountId) {
     currentEditAccId = accountId;
     document.getElementById('editAccIdDisplay').innerText = accountId;
@@ -187,16 +186,16 @@ function submitEditPassword() {
         .catch(err => alert("Lỗi kết nối: " + err.message));
 }
 
-// ==========================================
-// 5. XÓA TÀI KHOẢN
-// ==========================================
+
+//  XÓA TÀI KHOẢN
+
 function deleteAccount(id) {
     if (confirm(`Bạn có chắc muốn vô hiệu hóa tài khoản ${id} không?`)) {
         fetch(`http://127.0.0.1:5000/accounts/delete/${id}`, { method: 'PUT' })
             .then(res => res.json())
             .then(data => {
                 alert(data.mess || data.error || "Thành công!");
-                searchAccounts(); // Giữ nguyên thanh tìm kiếm và tải lại
+                searchAccounts();
             })
             .catch(err => alert("Lỗi khi xóa: " + err.message));
     }

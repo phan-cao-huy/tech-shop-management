@@ -6,7 +6,7 @@
 
 // 1. TẢI TỔNG DOANH THU
 function loadRevenue() {
-    // Lưu ý: Đổi chữ 'reports' thành URL prefix thật trong app.py của ông
+  
     fetch('http://127.0.0.1:5000/reports/revenue')
         .then(res => res.json())
         .then(data => {
@@ -16,7 +16,7 @@ function loadRevenue() {
         .catch(err => document.getElementById('totalRevenue').innerText = "Lỗi tải!");
 }
 
-// 2. TẢI TOP 10 SẢN PHẨM
+// TẢI TOP 10 SẢN PHẨM
 function loadTopProducts() {
     fetch('http://127.0.0.1:5000/reports/top-products')
         .then(res => res.json())
@@ -28,7 +28,7 @@ function loadTopProducts() {
             }
 
             tbody.innerHTML = data.map((item, index) => {
-                let badgeClass = index < 3 ? 'bg-danger' : 'bg-secondary'; // Top 3 thì màu đỏ
+                let badgeClass = index < 3 ? 'bg-danger' : 'bg-secondary'; 
                 return `
                 <tr>
                     <td class="ps-3"><span class="badge ${badgeClass}">${index + 1}</span></td>
@@ -41,7 +41,7 @@ function loadTopProducts() {
         .catch(err => console.error("Lỗi:", err));
 }
 
-// 3. TẢI TOP 3 KHÁCH HÀNG VIP
+// TẢI TOP 3 KHÁCH HÀNG VIP
 function loadTopCustomers() {
     fetch('http://127.0.0.1:5000/reports/top-customers')
         .then(res => res.json())
@@ -53,10 +53,10 @@ function loadTopCustomers() {
             }
 
             tbody.innerHTML = data.map((item, index) => {
-                // Đổi icon xếp hạng
+                
                 let rankIcon = index === 0 ? '<i class="fas fa-trophy text-warning fa-lg"></i>' :
                     index === 1 ? '<i class="fas fa-medal text-secondary fa-lg"></i>' :
-                        '<i class="fas fa-award fa-lg" style="color: #cd7f32;"></i>'; // Màu đồng
+                        '<i class="fas fa-award fa-lg" style="color: #cd7f32;"></i>'; 
 
                 const totalSpent = (item.TotalSpent || 0).toLocaleString('vi-VN');
 

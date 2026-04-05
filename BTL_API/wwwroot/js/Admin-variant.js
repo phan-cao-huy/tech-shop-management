@@ -1,11 +1,9 @@
-﻿// ==========================================
-// CÁC BIẾN TOÀN CỤC
-// ==========================================
+﻿
 let currentProductId = null;
-let parentProductData = null; // Lưu để gộp Information
+let parentProductData = null; 
 
 document.addEventListener("DOMContentLoaded", function () {
-    // 1. Lấy ProductID từ thanh URL (?productId=PROD...)
+    // 1. Lấy ProductID từ thanh URL
     const urlParams = new URLSearchParams(window.location.search);
     currentProductId = urlParams.get('productId');
 
@@ -19,14 +17,13 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 });
 
-// ==========================================
-// 2. LẤY THÔNG TIN SP CHA (Lấy Tên, Ảnh đại diện & Thông số chung)
-// ==========================================
+
+// LẤY THÔNG TIN SP 
 function loadParentProductInfo() {
     fetch(`http://127.0.0.1:5000/products/${currentProductId}`)
         .then(res => res.json())
         .then(data => {
-            // Fix: Kiểm tra nó là object có chứa ProductID
+            
             if (data && data.ProductID) {
                 parentProductData = data;
                 document.getElementById('parentProductName').innerText = parentProductData.ProductName;
@@ -41,9 +38,9 @@ function loadParentProductInfo() {
         });
 }
 
-// ==========================================
+
 // 3. LẤY DANH SÁCH BIẾN THỂ CON VÀ VẼ BẢNG
-// ==========================================
+
 function loadVariantsOfProduct() {
     fetch('http://127.0.0.1:5000/variants/getall')
         .then(res => {
@@ -97,14 +94,12 @@ function renderVariantTable(variants) {
     }).join('');
 }
 
-// ==========================================
-// 4. HÀM SIÊU CẤP: HIỂN THỊ MODAL (ẢNH TO + THÔNG SỐ GỘP)
-// ==========================================
+//  HIỂN THỊ MODAL (ẢNH TO + THÔNG SỐ GỘP)
 function viewMergedSpecs(variant) {
     // 1. TẠO ĐỐI TƯỢNG CHỨA TẤT CẢ THÔNG SỐ
     let fullSpecs = {};
 
-    // 2. NHẶT TỪ CHA (parentProductData)
+    // 2. NHẶT TỪ CHA 
     // Loại bỏ các cột quản lý, còn lại là thông số kỹ thuật (RAM, CPU, Màn hình...)
     if (parentProductData) {
         let excludedParent = ['ProductID', 'ProductName', 'Brand', 'Images', 'CategoryID', 'Information', 'IsDeleted'];
@@ -144,13 +139,13 @@ function viewMergedSpecs(variant) {
         <h5 class="text-primary fw-bold mb-3 border-bottom pb-2">Thông số kỹ thuật chi tiết</h5>
     `;
 
-    // VẼ BẢNG THÔNG SỐ SAU KHI GỘP
+    // VẼ BẢNG THÔNG SỐ 
     if (Object.keys(fullSpecs).length === 0) {
         html += '<p class="text-center text-muted"><i>Chưa cập nhật thông số kỹ thuật.</i></p>';
     } else {
         html += '<ul class="list-group list-group-flush border rounded">';
         for (const [key, value] of Object.entries(fullSpecs)) {
-            // Nếu là nhóm thông số (Object lồng)
+            // Nếu là nhóm thông số 
             if (typeof value === 'object' && value !== null) {
                 html += `<li class="list-group-item bg-light fw-bold">${key}</li>`;
                 for (const [subK, subV] of Object.entries(value)) {
@@ -170,24 +165,24 @@ function viewMergedSpecs(variant) {
     document.getElementById('fullSpecsBody').innerHTML = html;
     new bootstrap.Modal(document.getElementById('fullSpecsModal')).show();
 }
-// 1. Mở Modal và load danh sách
+// Mở Modal và load danh sách
 function openAddVariantModal() {
-    // 1. Reset form về trạng thái Thêm mới
+    // Reset form về trạng thái Thêm mới
     const form = document.getElementById('variantForm');
     if (form) form.reset();
 
     document.getElementById('v_ProductVariantID').value = "";
     document.getElementById('v_DynamicDescArea').innerHTML = ""; // Xóa các dòng thông số cũ
 
-    // 2. Cập nhật giao diện Modal
+    // Cập nhật giao diện Modal
     document.getElementById('v_ModalTitle').innerText = "Thêm Biến Thể Mới";
     document.getElementById('v_ModalHeader').className = "modal-header bg-success text-white";
 
-    // 3. Hiện Modal (Dùng ID đúng trong Index.cshtml của ông)
+    // Hiện Modal (Dùng ID đúng trong Index.cshtml của ông)
     new bootstrap.Modal(document.getElementById('variantEditModal')).show();
 }
 
-// 2. Load danh sách biến thể từ API
+// Load danh sách biến thể từ API
 function loadVariants(productId) {
     fetch(`http://127.0.0.1:5000/products/${productId}/variants`)
         .then(res => res.json())
@@ -207,7 +202,7 @@ function loadVariants(productId) {
         });
 }
 
-// 3. Thêm thông số riêng (Description)
+// Thêm thông số riêng
 function addVariantDescField(key = "", val = "") {
     const container = document.getElementById('v_DynamicDescArea');
     const id = Date.now() + Math.random();
@@ -220,11 +215,11 @@ function addVariantDescField(key = "", val = "") {
     `);
 }
 
-// 4. Lưu (Cả Add và Update)
+//Lưu 
 function submitVariant() {
     const variantId = document.getElementById('v_ProductVariantID').value;
 
-    // 1. Thu thập dữ liệu cơ bản
+    // 1. Thu thập dữ liệu 
     let payload = {
         ProductID: currentProductId, // Lấy từ biến global đầu file
         Color: document.getElementById('v_Color').value,
@@ -234,7 +229,7 @@ function submitVariant() {
         Status: document.getElementById('v_Status').value
     };
 
-    // 2. Thu thập các thông số kỹ thuật riêng (Dung lượng, v.v.)
+   
     document.querySelectorAll('.v-desc-row').forEach(row => {
         const k = row.querySelector('.v-key').value.trim();
         const v = row.querySelector('.v-val').value.trim();
@@ -252,7 +247,7 @@ function submitVariant() {
         .then(res => res.json())
         .then(data => {
             alert("Lưu biến thể thành công!");
-            location.reload(); // Load lại trang để cập nhật bảng
+            location.reload(); 
         })
         .catch(err => alert("Lỗi khi lưu: " + err.message));
 }
@@ -280,8 +275,6 @@ function editVariant(variantId) {
                     addVariantDescField(key, v[key]);
                 }
             });
-
-            // Cập nhật tiêu đề Modal thành màu vàng cho đúng tính chất "Sửa"
             document.getElementById('v_ModalTitle').innerText = "Chỉnh Sửa Biến Thể";
             document.getElementById('v_ModalHeader').className = "modal-header bg-warning text-dark";
 

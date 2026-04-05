@@ -233,7 +233,7 @@ function deleteEmployee(id) {
 }
 // 1. Hàm Mở Modal và lấy thông tin cũ điền vào
 function openEditModal(id) {
-    // Gọi API lấy thông tin chi tiết của 1 nhân viên (GET /employees/get/<id>)
+  
     fetch('http://127.0.0.1:5000/employees/' + id)
         .then(response => response.json())
         .then(data => {
@@ -257,12 +257,11 @@ function openEditModal(id) {
         .catch(error => console.error('Lỗi lấy thông tin:', error));
 }
 
-// 2. Hàm Lưu thay đổi khi bấm nút "Lưu Thay Đổi"
+// 2. Hàm Lưu thay đổi 
 function submitEditEmployee() {
-    // Lấy ID bị ẩn ra để biết đang sửa nhân viên nào
+   
     let id = document.getElementById('editEmployeeId').value;
-
-    // Gom dữ liệu mới trên form thành JSON
+  
     const updateData = {
         FullName: document.getElementById('editFullName').value,
         Role: document.getElementById('editRole').value,
@@ -270,7 +269,7 @@ function submitEditEmployee() {
         Email: document.getElementById('editEmail').value
     };
 
-    // Bắn API Update (PUT) sang Python
+   
     fetch(`http://127.0.0.1:5000/employees/update/${id}`, {
         method: 'PUT',
         headers: {
@@ -285,12 +284,12 @@ function submitEditEmployee() {
             if (result.status === 200) {
                 alert("Cập nhật thông tin thành công!");
 
-                // Tắt Modal Sửa đi
+               
                 var myModalEl = document.getElementById('editEmployeeModal');
                 var modal = bootstrap.Modal.getInstance(myModalEl);
                 modal.hide();
 
-                // Load lại bảng để thấy chữ mới vừa sửa
+                
                 executeSearch();
             } else {
                 alert("Lỗi khi cập nhật: " + (result.body.mess || result.body.error));

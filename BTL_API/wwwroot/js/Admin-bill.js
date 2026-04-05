@@ -1,7 +1,5 @@
-﻿// ==========================================
-// 1. CÁC BIẾN TOÀN CỤC CHO PHÂN TRANG 
-// ==========================================
-// Đổi tên biến cho chuẩn, tránh đụng hàng với trang khác
+﻿
+//  CÁC BIẾN TOÀN CỤC CHO PHÂN TRANG 
 let currentBillData = [];
 let currentBillPage = 1;
 const billRowsPerPage = 5;
@@ -26,11 +24,10 @@ function executeBillSearch() {
                 data = data.filter(bill =>
                     (bill.BillID && bill.BillID.toLowerCase().includes(kw)) ||
                     (bill.CustomerID && bill.CustomerID.toLowerCase().includes(kw)) ||
-                    (bill.CustomerName && bill.CustomerName.toLowerCase().includes(kw)) || // TÌM THEO TÊN KHÁCH HÀNG
-                    (bill.EmployeeName && bill.EmployeeName.toLowerCase().includes(kw))    // TÌM THEO TÊN NHÂN VIÊN
-                );
+                    (bill.CustomerName && bill.CustomerName.toLowerCase().includes(kw)) || 
+                    (bill.EmployeeName && bill.EmployeeName.toLowerCase().includes(kw))   
             }
-            currentBillData = data; // Không cần .reverse() nữa vì Python đã ORDER BY DESC rồi
+            currentBillData = data; 
             currentBillPage = 1;
             renderBillTable();
         })
@@ -91,9 +88,8 @@ function renderBillTable() {
 
     renderBillPagination();
 }
-// ==========================================
-// 2. XEM CHI TIẾT ĐƠN HÀNG (BILL DETAIL)
-// ==========================================
+//XEM CHI TIẾT ĐƠN HÀNG 
+
 function viewBillDetails(billId, totalPrice) {
     document.getElementById('detailBillId').innerText = billId;
     document.getElementById('detailTotalPrice').innerText = totalPrice.toLocaleString() + 'đ';
@@ -125,30 +121,28 @@ function viewBillDetails(billId, totalPrice) {
         .catch(err => alert("Lỗi khi lấy chi tiết đơn hàng!"));
 }
 
-// ==========================================
-// 3. DUYỆT ĐƠN (CHECKOUT) - TRỪ TỒN KHO
-// ==========================================
+
+// DUYỆT ĐƠN 
 function checkoutBill(billId) {
     if (!confirm(`Xác nhận duyệt và xuất kho cho đơn hàng [${billId}]?`)) return;
 
     fetch(`http://127.0.0.1:5000/bills/${billId}/checkout`, { method: 'POST' })
         .then(res => res.json())
         .then(result => {
-            // Kiểm tra xem backend có báo lỗi hết hàng không
             if (result.mess && result.mess.includes("out of stock")) {
                 alert("Thất bại: Có sản phẩm trong đơn đã HẾT HÀNG trong kho!");
             } else if (result.error) {
                 alert("Lỗi Server: " + result.error);
             } else {
                 alert("Duyệt đơn thành công! Đã trừ tồn kho.");
-                executeBillSearch(); // Load lại bảng
+                executeBillSearch(); 
             }
         });
 }
 
-// ==========================================
-// 4. HỦY ĐƠN (CANCEL) - HOÀN LẠI TỒN KHO
-// ==========================================
+
+// HỦY ĐƠN 
+
 function cancelBill(billId) {
     if (!confirm(`Bạn có chắc chắn muốn HỦY đơn hàng [${billId}]? Nếu đơn đã duyệt, tồn kho sẽ được cộng lại.`)) return;
 
@@ -164,9 +158,9 @@ function cancelBill(billId) {
         });
 }
 
-// ==========================================
-// 5. PHÂN TRANG (PAGINATION)
-// ==========================================
+
+// PHÂN TRANG 
+
 function renderBillPagination() {
     let totalPages = Math.ceil(currentBillData.length / billRowsPerPage);
     let html = '';
@@ -204,23 +198,22 @@ function changeBillPage(e, page) {
     currentBillPage = page;
     renderBillTable();
 }
-// ==========================================
-// 6. MỞ FORM TẠO ĐƠN HÀNG (TỰ LẤY ID NHÂN VIÊN)
-// ==========================================
+// MỞ FORM TẠO ĐƠN HÀNG 
+
 function openAddBillModal() {
     // Reset form
     document.getElementById('addCustomerID').value = '';
     document.getElementById('addPayMethod').value = 'Tiền mặt';
     document.getElementById('billDetailArea').innerHTML = '';
-    addBillDetailRow(); // Mặc định thêm 1 dòng trống
+    addBillDetailRow(); 
 
-    // Lấy ID Nhân viên đang đăng nhập từ LocalStorage
+    // Lấy ID Nhân viên 
     let empInput = document.getElementById('addEmployeeID');
     let empIdFromJS = localStorage.getItem('EmployeeID');
 
     if (empIdFromJS) {
         empInput.value = empIdFromJS;
-        empInput.setAttribute('readonly', 'true'); // Khóa lại không cho sửa
+        empInput.setAttribute('readonly', 'true'); 
         empInput.classList.add('bg-light');
     } else {
         empInput.value = '';
@@ -250,9 +243,8 @@ function addBillDetailRow() {
     document.getElementById('billDetailArea').insertAdjacentHTML('beforeend', html);
 }
 
-// ==========================================
-// 7. LƯU ĐƠN HÀNG & CHI TIẾT LÊN SERVER
-// ==========================================
+// LƯU ĐƠN HÀNG & CHI TIẾT LÊN SERVER
+
 async function submitFullBill() {
     const customerId = document.getElementById('addCustomerID').value.trim() || null;
     const employeeId = document.getElementById('addEmployeeID').value.trim();
@@ -282,7 +274,7 @@ async function submitFullBill() {
     }
 
     try {
-        // Gọi API Tạo Đơn Bán Hàng gốc
+        
         const billRes = await fetch('http://127.0.0.1:5000/bills/add', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -291,7 +283,7 @@ async function submitFullBill() {
                 EmployeeID: employeeId,
                 PaymentMethod: payMethod,
                 Status: 'Draft',
-                TotalPrice: 0 // Ban đầu là 0, API BillDetail sẽ tự cộng dồn vào sau
+                TotalPrice: 0 
             })
         });
 
@@ -300,7 +292,7 @@ async function submitFullBill() {
 
         const newBillId = billData.BillID;
 
-        // Chạy vòng lặp thêm từng chi tiết sản phẩm vào đơn
+   
         for (const item of details) {
             item.BillID = newBillId;
             const detRes = await fetch('http://127.0.0.1:5000/bill-details/add', {
@@ -309,7 +301,7 @@ async function submitFullBill() {
                 body: JSON.stringify(item)
             });
 
-            // Xử lý nếu mã SP sai hoặc không tồn tại
+           
             if (!detRes.ok) {
                 const errData = await detRes.json();
                 console.error("Lỗi dòng:", item, errData);
@@ -318,7 +310,7 @@ async function submitFullBill() {
         }
 
         alert("Tạo đơn hàng thành công!");
-        location.reload(); // Tải lại trang
+        location.reload();
 
     } catch (err) {
         alert("Lỗi: " + err.message);

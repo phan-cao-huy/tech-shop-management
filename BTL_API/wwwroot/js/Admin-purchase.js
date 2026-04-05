@@ -1,7 +1,5 @@
-﻿// ==========================================
-// CÁC BIẾN TOÀN CỤC CHO PHÂN TRANG VÀ LỌC
-// ==========================================
-let originalOrderData = []; // Dữ liệu gốc từ API
+﻿
+let originalOrderData = []; // Dữ liệu gốc
 let filteredOrderData = []; // Dữ liệu sau khi lọc
 let currentOrderPage = 1;
 const orderRowsPerPage = 5; // Số dòng trên 1 trang 
@@ -10,9 +8,9 @@ document.addEventListener("DOMContentLoaded", function () {
     loadPurchaseOrders();
 });
 
-// ==========================================
-// 1. TẢI DỮ LIỆU TỪ FLASK
-// ==========================================
+
+//TẢI DỮ LIỆU TỪ FLASK
+
 function loadPurchaseOrders() {
     fetch('http://127.0.0.1:5000/purchase_orders/getall')
         .then(res => {
@@ -24,7 +22,7 @@ function loadPurchaseOrders() {
                 document.getElementById('purchaseOrderTableBody').innerHTML = `<tr><td colspan="7" class="text-center text-muted">${data.message}</td></tr>`;
             } else {
                 originalOrderData = data;
-                filteredOrderData = data; // Mặc định chưa lọc thì 2 mảng giống nhau
+                filteredOrderData = data; 
                 currentOrderPage = 1;
                 renderOrderTable();
             }
@@ -34,11 +32,9 @@ function loadPurchaseOrders() {
         });
 }
 
-// ==========================================
-// HÀM LỌC (LỌC TRẠNG THÁI & TÌM KIẾM MÃ PHIẾU)
-// ==========================================
+// HÀM LỌC
 function filterOrders() {
-    // Lấy phần tử HTML (kiểm tra tồn tại để tránh lỗi nếu chưa kịp update HTML)
+    // Lấy phần tử HTML
     const statusSelect = document.getElementById('filterStatus');
     const searchInput = document.getElementById('searchOrderInput');
 
@@ -64,9 +60,8 @@ function filterOrders() {
     renderOrderTable();
 }
 
-// ==========================================
-// 2. VẼ BẢNG + CẮT DỮ LIỆU THEO TRANG
-// ==========================================
+
+// VẼ BẢNG 
 function renderOrderTable() {
     const tbody = document.getElementById('purchaseOrderTableBody');
 
@@ -98,7 +93,7 @@ function renderOrderTable() {
            
             actionButtons += `<button class="btn btn-sm btn-light text-danger" title="Xóa nháp" onclick="deleteOrder('${po.PurchaseOrderID}')"><i class="fas fa-trash" ></i></button>`;
         }
-        // Giả sử sau khi duyệt xong trạng thái là Processing/Pending, có thể thêm nút Thanh toán
+        
         else if (po.Status === "Processing" || po.Status === "Pending Payment") {
             actionButtons += `<button class="btn btn-sm btn-light text-success me-1" title="Thanh toán & Hoàn thành" onclick="payOrder('${po.PurchaseOrderID}')"><i class="fas fa-dollar-sign"></i></button>`;
         }
@@ -127,9 +122,8 @@ function renderOrderTable() {
     renderOrderPagination();
 }
 
-// ==========================================
-// 3. VẼ CÁC NÚT PHÂN TRANG
-// ==========================================
+
+// CÁC NÚT PHÂN TRANG
 function renderOrderPagination() {
     let totalPages = Math.ceil(filteredOrderData.length / orderRowsPerPage);
     let paginationContainer = document.querySelector('.pagination');
@@ -158,9 +152,8 @@ function renderOrderPagination() {
     paginationContainer.innerHTML = html;
 }
 
-// ==========================================
-// 4. SỰ KIỆN KHI BẤM CHUYỂN TRANG
-// ==========================================
+
+// SỰ KIỆN KHI BẤM CHUYỂN TRANG
 function changeOrderPage(e, page) {
     e.preventDefault();
     let totalPages = Math.ceil(filteredOrderData.length / orderRowsPerPage);
@@ -171,9 +164,7 @@ function changeOrderPage(e, page) {
 }
 
 
-// ==========================================
 // MỞ FORM THÊM PHIẾU NHẬP
-// ==========================================
 function openAddOrderModal() {
     document.getElementById('addSupplierID').value = '';
     document.getElementById('orderDetailArea').innerHTML = '';
@@ -185,7 +176,7 @@ function openAddOrderModal() {
 
     if (empIdFromJS) {
         empInput.value = empIdFromJS;
-        // Khóa luôn ô nhập, không cho sửa thành mã người khác
+        // Khóa luôn ô nhập
         empInput.setAttribute('readonly', 'true');
         empInput.classList.add('bg-light');
     } else {
@@ -218,9 +209,7 @@ function addDetailRow() {
     document.getElementById('orderDetailArea').insertAdjacentHTML('beforeend', html);
 }
 
-// ==========================================
 // LƯU PHIẾU NHẬP VÀ CÁC CHI TIẾT
-// ==========================================
 async function submitFullOrder() {
     const supplierId = document.getElementById('addSupplierID').value.trim();
     const employeeId = document.getElementById('addEmployeeID').value.trim();
@@ -281,9 +270,7 @@ async function submitFullOrder() {
     }
 }
 
-// ==========================================
 // XEM CHI TIẾT MỘT PHIẾU NHẬP
-// ==========================================
 function viewOrderDetail(poId) {
     fetch(`http://127.0.0.1:5000/purchase_orders/${poId}`)
         .then(res => res.json())
@@ -312,20 +299,18 @@ function viewOrderDetail(poId) {
         })
         .catch(err => alert("Lỗi tải chi tiết: " + err.message));
 }
-// ==========================================
-// DUYỆT PHIẾU VÀ CỘNG HÀNG VÀO KHO
-// ==========================================
+// DUYỆT PHIẾU
 function confirmOrder(poId) {
     if (confirm(`Bạn có chắc muốn duyệt phiếu ${poId}? Số lượng sẽ được CỘNG THẲNG vào tồn kho.`)) {
 
-        // LƯU Ý: Nếu API cộng kho của ông trong file Python tên khác, hãy sửa lại chữ '/confirm' ở link dưới cho khớp nhé.
+       
         fetch(`http://127.0.0.1:5000/purchase_orders/${poId}/confirm`, {
             method: 'POST'
         })
             .then(res => res.json())
             .then(data => {
                 if (data.message) {
-                    alert(data.message); // Nó sẽ hiện dòng "Confirmed and stock updated successfully!" từ Backend
+                    alert(data.message); 
                     location.reload();
                 } else {
                     alert("Lỗi: " + (data.error || "Không thể duyệt phiếu"));
@@ -335,9 +320,8 @@ function confirmOrder(poId) {
     }
 }
 
-// ==========================================
+
 // THANH TOÁN PHIẾU NHẬP
-// ==========================================
 function payOrder(poId) {
     if (confirm(`Xác nhận đã thanh toán tiền cho nhà cung cấp của phiếu ${poId}?`)) {
 
@@ -356,9 +340,9 @@ function payOrder(poId) {
             .catch(err => alert("Lỗi kết nối: " + err.message));
     }
 }
-// ==========================================
+
 // XÓA PHIẾU NHẬP 
-// ==========================================
+
 function deleteOrder(poId) {
     if (confirm(`Bạn có chắc chắn muốn xóa bản nháp ${poId} không? Hành động này không thể hoàn tác!`)) {
         fetch(`http://127.0.0.1:5000/purchase_orders/delete/${poId}`, {
@@ -368,7 +352,7 @@ function deleteOrder(poId) {
             .then(data => {
                 if (data.message === "Success!" || res.ok) {
                     alert("Đã xóa phiếu nhập thành công!");
-                    location.reload(); // Tải lại trang
+                    location.reload(); 
                 } else {
                     alert("Lỗi khi xóa: " + (data.error || data.message));
                 }

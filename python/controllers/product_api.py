@@ -244,16 +244,23 @@ def search_products():
         cursor = db_conn.cursor()
 
         sql = """
-              SELECT * \
-              FROM Product
-              WHERE ProductID LIKE ?
-                 OR ProductName LIKE ?
-                 OR Brand LIKE ?
-                 OR Information LIKE ? \
+              SELECT DISTINCT p.* \
+              FROM Product p \
+                       LEFT JOIN ProductVariant pv ON p.ProductID = pv.ProductID
+              WHERE p.ProductID LIKE ?
+                 OR p.ProductName LIKE ?
+                 OR p.Brand LIKE ?
+                 OR pv.ProductVariantID LIKE ?
+                 OR pv.Color LIKE ?
               """
         search_term = f"%{keyword}%"
 
-        cursor.execute(sql, (search_term, search_term, search_term, search_term))
+        # Cần truyền 7 biến search_term tương ứng với 7 dấu chấm hỏi (?) trong câu SQL
+        cursor.execute(sql, (
+            search_term, search_term, search_term, search_term,
+            search_term,
+        ))
+
         return flask.jsonify(get_json_results(cursor)), 200
     except Exception as e:
-        return flask.jsonify({'error': str(e)}), 400
+        return flask.jsonify({"error": str(e)}), 500

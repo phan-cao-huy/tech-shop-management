@@ -58,14 +58,13 @@ function renderCusPagination() {
     let totalPages = Math.ceil(currentCusData.length / cusRowsPerPage);
     let html = '';
 
-    // Nếu không có dữ liệu hoặc chỉ có 1 trang thì không cần hiện phân trang
+  
     if (totalPages <= 1) {
         document.querySelector('.pagination').innerHTML = '';
         return;
     }
 
-    // Nút "Trước" (Previous)
-    // Nếu đang ở trang 1 thì thêm class 'disabled' để không cho bấm
+    // Nút "Trước" 
     html += `
         <li class="page-item ${currentCusPage === 1 ? 'disabled' : ''}">
             <a class="page-link" href="#" onclick="changeCusPage(event, ${currentCusPage - 1})">Trước</a>
@@ -79,8 +78,7 @@ function renderCusPagination() {
             </li>`;
     }
 
-    // Nút "Sau" (Next)
-    // Nếu đang ở trang cuối cùng thì thêm class 'disabled'
+    // Nút "Sau" 
     html += `
         <li class="page-item ${currentCusPage === totalPages ? 'disabled' : ''}">
             <a class="page-link" href="#" onclick="changeCusPage(event, ${currentCusPage + 1})">Sau</a>
@@ -194,23 +192,21 @@ function submitEditCustomer() {
         })
         .catch(error => console.error('Lỗi cập nhật:', error));
 }
-// ==========================================
+
 // XEM LỊCH SỬ MUA HÀNG CỦA KHÁCH HÀNG
-// ==========================================
 function viewCustomerHistory(customerId, customerName) {
-    // 1. Gắn tên khách hàng lên tiêu đề Modal
+    
     document.getElementById('historyCustomerName').innerText = customerName;
     const tbody = document.getElementById('historyTableBody');
     tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4"><i class="fas fa-spinner fa-spin me-2"></i> Đang tải dữ liệu...</td></tr>`;
 
-    // 2. Mở Modal lên trước cho trải nghiệm mượt mà
     new bootstrap.Modal(document.getElementById('customerHistoryModal')).show();
 
-    // 3. Gọi API lấy toàn bộ Bill (API này đã join sẵn EmployeeName ở Backend)
+   
     fetch('http://127.0.0.1:5000/bills/getall')
         .then(res => res.json())
         .then(data => {
-            // Lọc ra hóa đơn thuộc về CustomerID này
+          
             const customerBills = data.filter(b => b.CustomerID === customerId);
 
             if (customerBills.length === 0) {
@@ -218,9 +214,8 @@ function viewCustomerHistory(customerId, customerName) {
                 return;
             }
 
-            // Vẽ dữ liệu ra bảng
             tbody.innerHTML = customerBills.map(b => {
-                // Xử lý màu sắc Badge
+
                 let badgeClass = "bg-primary";
                 if (b.Status === "Completed") badgeClass = "bg-success";
                 else if (b.Status === "Cancelled") badgeClass = "bg-danger";

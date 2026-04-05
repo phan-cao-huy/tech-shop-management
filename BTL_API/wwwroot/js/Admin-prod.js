@@ -43,12 +43,8 @@ function executeProdSearch() {
 // ==========================================
 // 3. HÀM VẼ BẢNG
 // ==========================================
-// ==========================================
-// 3. HÀM VẼ BẢNG & XỬ LÝ NHIỀU ẢNH JSON
-// ==========================================
-// ==========================================
-// 3. HÀM VẼ BẢNG
-// ==========================================
+
+
 function renderProdTable() {
     const tableBody = document.getElementById('productTableBody');
     let htmlContent = '';
@@ -64,10 +60,10 @@ function renderProdTable() {
     let paginatedData = currentProdData.slice(startIndex, endIndex);
 
     paginatedData.forEach(prod => {
-        // Gọi hàm dịch ảnh
+
         let imagesHtml = renderImageJson(prod.Images);
 
-        // Đã xóa cột Thông số (infoHtml) và cột Trạng thái để khớp với 5 cột HTML
+     
         htmlContent += `
             <tr>
                 <td><strong>${prod.ProductID}</strong></td>
@@ -100,10 +96,10 @@ function renderProdTable() {
     renderProdPagination();
 }
 
-// ==========================================
-// -- HÀM PHỤ: XỬ LÝ CHUỖI JSON ẢNH TỪ PYTHON TRẢ VỀ --
-// ==========================================
-// Đã xóa bỏ dấu trừ lỗi ở đây
+
+// XỬ LÝ CHUỖI JSON ẢNH TỪ PYTHON TRẢ VỀ
+
+
 function renderImageJson(imageJsonString) {
     if (!imageJsonString) return '<span class="text-muted small">No IMG</span>';
 
@@ -134,7 +130,7 @@ function renderProdPagination() {
     let totalPages = Math.ceil(currentProdData.length / prodRowsPerPage);
     let html = '';
 
-    // Nếu chỉ có 1 trang hoặc không có data thì ẩn luôn thanh phân trang
+
     if (totalPages <= 1) {
         document.querySelector('.pagination-prod').innerHTML = '';
         return;
@@ -274,7 +270,7 @@ function openEditModal(productId) {
             const area = document.getElementById('editDynamicSpecArea');
             area.innerHTML = '';
 
-            // Back-end của ông đã bóc sẵn Information ra thành các key lẻ trong object 
+            // Back-end 
             const excludedKeys = ['ProductID', 'ProductName', 'Brand', 'Images', 'CategoryID', 'Information', 'IsDeleted'];
 
             Object.keys(prod).forEach(key => {
