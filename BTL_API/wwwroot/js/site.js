@@ -5,7 +5,7 @@ const API = 'http://127.0.0.1:5000';
 // ======================= UTILITIES =======================
 
 function formatPrice(n) {
-    if (n == null) return '0 ₫';
+    if (!n) return 'Giá liên hệ';
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
 }
 
@@ -563,20 +563,28 @@ async function loadProductDetail(productId) {
                         return html;
                     })() : ''}
 
-                    <div class="stock-info ${defaultVariant && defaultVariant.StockQuantity > 0 ? 'in-stock' : 'out-of-stock'}" id="stockInfo">
+                    <div class="stock-info ${defaultVariant && defaultVariant.StockQuantity > 0 ? 'in-stock' : 'out-of-stock'}" id="stockInfo" style="${defaultVariant && !defaultVariant.SellingPrice ? 'display:none' : ''}">
                         <i class="bi ${defaultVariant && defaultVariant.StockQuantity > 0 ? 'bi-check-circle-fill' : 'bi-x-circle-fill'}"></i>
                         <span id="stockText">${defaultVariant ? (defaultVariant.StockQuantity > 0 ? 'Còn ' + defaultVariant.StockQuantity + ' sản phẩm' : 'Hết hàng') : 'Không có phiên bản'}</span>
                     </div>
 
-                    <div class="qty-selector" id="qtySelector" style="${!defaultVariant || defaultVariant.StockQuantity <= 0 ? 'display:none' : ''}">
+                    <div class="contact-price-box" id="contactPriceBox" style="${!defaultVariant || defaultVariant.SellingPrice ? 'display:none' : ''}">
+                        <i class="bi bi-telephone-fill"></i>
+                        <div>
+                            <div class="contact-price-title">Liên hệ để biết giá</div>
+                            <div class="contact-price-desc">Vui lòng gọi <a href="tel:19001234"><strong>1900 1234</strong></a> để được tư vấn và báo giá tốt nhất.</div>
+                        </div>
+                    </div>
+
+                    <div class="qty-selector" id="qtySelector" style="${!defaultVariant || defaultVariant.StockQuantity <= 0 || !defaultVariant.SellingPrice ? 'display:none' : ''}">
                         <button class="qty-btn" onclick="changeQty(-1)">−</button>
                         <input type="number" class="qty-input" id="qtyInput" value="1" min="1" max="${defaultVariant ? defaultVariant.StockQuantity : 1}" oninput="clampQtyInput(this)">
                         <button class="qty-btn" onclick="changeQty(1)">+</button>
                     </div>
 
-                    <button class="btn-add-cart" id="btnAddCart" ${!defaultVariant || defaultVariant.StockQuantity <= 0 ? 'disabled' : ''}>
+                    <button class="btn-add-cart" id="btnAddCart" ${!defaultVariant || defaultVariant.StockQuantity <= 0 || !defaultVariant.SellingPrice ? 'disabled' : ''}>
                         <i class="bi bi-cart-plus"></i>
-                        ${!defaultVariant || defaultVariant.StockQuantity <= 0 ? 'Hết hàng' : 'Thêm vào giỏ hàng'}
+                        ${!defaultVariant ? 'Hết hàng' : !defaultVariant.SellingPrice ? 'Giá liên hệ' : defaultVariant.StockQuantity <= 0 ? 'Hết hàng' : 'Thêm vào giỏ hàng'}
                     </button>
 
                     ${specsHtml ? '<h3 style="margin-top:2rem;font-size:1.1rem;font-weight:600">Thông số kỹ thuật</h3>' + specsHtml : ''}
@@ -712,7 +720,17 @@ function selectVariant(idx) {
     const qtySel = document.getElementById('qtySelector');
     const qtyInput = document.getElementById('qtyInput');
 
-    if (v.StockQuantity > 0) {
+    const contactBox = document.getElementById('contactPriceBox');
+    const isContactPrice = !v.SellingPrice;
+
+    if (isContactPrice) {
+        stockInfo.style.display = 'none';
+        btnAdd.disabled = true;
+        btnAdd.innerHTML = '<i class="bi bi-telephone"></i> Giá liên hệ';
+        qtySel.style.display = 'none';
+        if (contactBox) contactBox.style.display = '';
+    } else if (v.StockQuantity > 0) {
+        stockInfo.style.display = '';
         stockInfo.className = 'stock-info in-stock';
         stockInfo.querySelector('i').className = 'bi bi-check-circle-fill';
         stockText.textContent = 'Còn ' + v.StockQuantity + ' sản phẩm';
@@ -721,13 +739,16 @@ function selectVariant(idx) {
         qtySel.style.display = '';
         qtyInput.max = v.StockQuantity;
         qtyInput.value = 1;
+        if (contactBox) contactBox.style.display = 'none';
     } else {
+        stockInfo.style.display = '';
         stockInfo.className = 'stock-info out-of-stock';
         stockInfo.querySelector('i').className = 'bi bi-x-circle-fill';
         stockText.textContent = 'Hết hàng';
         btnAdd.disabled = true;
         btnAdd.innerHTML = '<i class="bi bi-cart-plus"></i> Hết hàng';
         qtySel.style.display = 'none';
+        if (contactBox) contactBox.style.display = 'none';
     }
 
     // Switch gallery to variant image
