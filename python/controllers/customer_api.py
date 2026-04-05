@@ -1,4 +1,3 @@
-import pandas as pd
 import flask
 import uuid
 from db_config import get_connection, get_json_results, generate_new_id
