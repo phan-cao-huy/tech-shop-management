@@ -74,3 +74,82 @@
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
+<div class="modal fade" id="employeeProfileModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header" style="background-color: #0a2551; color: white;">
+                <h5 class="modal-title"><i class="fas fa-id-badge me-2"></i>Hồ sơ của tôi</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center p-4">
+                <img src="https://ui-avatars.com/api/?name=Admin&background=1b45cf&color=fff&size=100"
+                     id="profileAvatar" class="rounded-circle mb-3 shadow-sm" alt="Avatar">
+                
+                <h4 id="profileFullName" class="fw-bold mb-1" style="color: #0a2551;">Đang tải...</h4>
+                <p><span id="profileRole" class="badge bg-primary px-3 py-2 rounded-pill">...</span></p>
+
+                <ul class="list-group list-group-flush text-start mt-4">
+                    <li class="list-group-item px-0">
+                        <i class="fas fa-hashtag text-muted me-2"></i> <strong>Mã NV:</strong> <span id="profileEmpId" class="float-end"></span>
+                    </li>
+                    <li class="list-group-item px-0">
+                        <i class="fas fa-phone text-muted me-2"></i> <strong>SĐT:</strong> <span id="profilePhone" class="float-end"></span>
+                    </li>
+                    <li class="list-group-item px-0">
+                        <i class="fas fa-envelope text-muted me-2"></i> <strong>Email:</strong> <span id="profileEmail" class="float-end"></span>
+                    </li>
+                </ul>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary w-100" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    // Hàm xem hồ sơ
+    function viewMyProfile() {
+    // Lấy mã nhân viên đang lưu trong trình duyệt
+    const empId = localStorage.getItem('EmployeeID');
+        
+    if (!empId) {
+    alert("Bạn đang đăng nhập bằng tài khoản không có mã nhân viên (VD: Admin hệ thống cũ)!");
+    return;
+    }
+
+    // Gọi API get_employee(id) của ông
+    fetch(`http://127.0.0.1:5000/employees/${empId}`)
+    .then(res => res.json())
+    .then(data => {
+    // API fetchone bằng get_json_results trả về mảng, nên lấy data[0]
+    if (data && data.length > 0) {
+    const emp = data[0];
+                    
+    // Cập nhật giao diện
+    document.getElementById('profileEmpId').innerText = emp.EmployeeID;
+    document.getElementById('profileFullName').innerText = emp.FullName;
+    document.getElementById('profileRole').innerText = emp.Role;
+    document.getElementById('profilePhone').innerText = emp.Phone || 'Chưa cập nhật';
+    document.getElementById('profileEmail').innerText = emp.Email || 'Chưa cập nhật';
+                    
+    // Đổi tên avatar theo chữ cái đầu
+    document.getElementById('profileAvatar').src = `https://ui-avatars.com/api/?name=${emp.FullName}&background=1b45cf&color=fff&size=100`;
+
+    // Hiển thị modal
+    new bootstrap.Modal(document.getElementById('employeeProfileModal')).show();
+    } else {
+    alert("Không tìm thấy dữ liệu hồ sơ!");
+    }
+    })
+    .catch(err => alert("Lỗi kết nối Server: " + err.message));
+    }
+
+    // Tiện tay làm luôn hàm Đăng xuất
+    function handleLogout() {
+    if(confirm("Bạn có chắc chắn muốn đăng xuất?")) {
+    localStorage.clear(); // Xóa sạch bộ nhớ
+    sessionStorage.clear();
+    window.location.href = '/Login/Index'; // Chuyển về trang đăng nhập
+    }
+    }
+</script>

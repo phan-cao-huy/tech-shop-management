@@ -1,0 +1,58 @@
+﻿@{
+    ViewData["Title"] = "Quản lý Tài khoản";
+    Layout = "~/Views/Shared/_Layout_Admin.cshtml";
+}
+
+<h2 class="mt-4" style="color: #0a2551; font-weight: 600;">Danh sách Tài khoản hệ thống</h2>
+<ol class="breadcrumb mb-4">
+    <li class="breadcrumb-item"><a href="#" style="color: #1b45cf; text-decoration: none;">Hệ thống</a></li>
+    <li class="breadcrumb-item active">Tài khoản</li>
+</ol>
+
+<div class="row mb-3 align-items-center">
+    <div class="col-md-6">
+        <div class="input-group">
+            <input type="text" id="accSearchInput" class="form-control" placeholder="Tìm tên đăng nhập hoặc chức vụ..." onkeypress="handleAccSearch(event)">
+            <button class="btn btn-primary" type="button" onclick="searchAccounts()">
+                <i class="fas fa-search"></i> Tìm kiếm
+            </button>
+            <button class="btn btn-outline-secondary" type="button" onclick="loadAccounts()" title="Tải lại danh sách">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+    </div>
+    <div class="col-md-6 d-flex justify-content-end">
+        <button class="btn text-white" title="Thêm tài khoản mới" style="background-color: #1b45cf; border: none;" onclick="alert('Ông nhớ viết thêm hàm /add trong Python nhé!')">
+            <i class="fas fa-user-plus fa-lg me-1"></i> Thêm tài khoản
+        </button>
+    </div>
+</div>
+
+<div class="card mb-4 shadow-sm border-0">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" width="100%" cellspacing="0">
+                <thead style="background-color: #f4f6f9; color: #0a2551;">
+                    <tr>
+                    
+                        <th width="15%">Mã TK</th>
+                        <th width="25%">Tên đăng nhập (Username)</th>
+                        <th width="20%">Vai trò (Role)</th>
+                        <th class="text-center" width="15%">Trạng thái</th>
+                        <th class="text-center pe-3" width="20%">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody id="accountTableBody">
+                    <tr><td colspan="6" class="text-center text-muted py-4">Đang tải dữ liệu...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer bg-white py-3">
+        <ul class="pagination pagination-acc justify-content-end mb-0"></ul>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/Admin-account.js" asp-append-version="true"></script>
+}

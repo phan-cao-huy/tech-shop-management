@@ -1,7 +1,8 @@
 ﻿// ==========================================
-// CÁC BIẾN TOÀN CỤC CHO PHÂN TRANG
+// CÁC BIẾN TOÀN CỤC CHO PHÂN TRANG VÀ LỌC
 // ==========================================
-let currentOrderData = [];
+let originalOrderData = []; // Dữ liệu gốc từ API
+let filteredOrderData = []; // Dữ liệu sau khi lọc
 let currentOrderPage = 1;
 const orderRowsPerPage = 5; // Số dòng trên 1 trang 
 
@@ -13,7 +14,6 @@ document.addEventListener("DOMContentLoaded", function () {
 // 1. TẢI DỮ LIỆU TỪ FLASK
 // ==========================================
 function loadPurchaseOrders() {
-
     fetch('http://127.0.0.1:5000/purchase_orders/getall')
         .then(res => {
             if (!res.ok) throw new Error("Lỗi 404: Kiểm tra lại url_prefix trong app.py của Flask!");
@@ -23,8 +23,9 @@ function loadPurchaseOrders() {
             if (data.message && data.message.includes("Can't get")) {
                 document.getElementById('purchaseOrderTableBody').innerHTML = `<tr><td colspan="7" class="text-center text-muted">${data.message}</td></tr>`;
             } else {
-                currentOrderData = data;
-                currentOrderPage = 1; // Reset về trang 1 mỗi khi load lại
+                originalOrderData = data;
+                filteredOrderData = data; // Mặc định chưa lọc thì 2 mảng giống nhau
+                currentOrderPage = 1;
                 renderOrderTable();
             }
         })
@@ -34,27 +35,55 @@ function loadPurchaseOrders() {
 }
 
 // ==========================================
+// HÀM LỌC (LỌC TRẠNG THÁI & TÌM KIẾM MÃ PHIẾU)
+// ==========================================
+function filterOrders() {
+    // Lấy phần tử HTML (kiểm tra tồn tại để tránh lỗi nếu chưa kịp update HTML)
+    const statusSelect = document.getElementById('filterStatus');
+    const searchInput = document.getElementById('searchOrderInput');
+
+    const statusVal = statusSelect ? statusSelect.value : "All";
+    const searchVal = searchInput ? searchInput.value.trim().toLowerCase() : "";
+
+    // Lọc từ mảng gốc
+    filteredOrderData = originalOrderData.filter(po => {
+        let matchStatus = true;
+        if (statusVal !== "All" && statusVal !== "Tất cả trạng thái...") {
+            matchStatus = po.Status === statusVal;
+        }
+
+        let matchSearch = true;
+        if (searchVal) {
+            matchSearch = po.PurchaseOrderID.toLowerCase().includes(searchVal);
+        }
+
+        return matchStatus && matchSearch;
+    });
+
+    currentOrderPage = 1; // Về trang 1 sau khi lọc
+    renderOrderTable();
+}
+
+// ==========================================
 // 2. VẼ BẢNG + CẮT DỮ LIỆU THEO TRANG
 // ==========================================
 function renderOrderTable() {
     const tbody = document.getElementById('purchaseOrderTableBody');
 
-    if (!currentOrderData || currentOrderData.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4"><i>Chưa có phiếu nhập nào.</i></td></tr>`;
+    // Chú ý: Dùng filteredOrderData thay vì currentOrderData
+    if (!filteredOrderData || filteredOrderData.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4"><i>Không tìm thấy phiếu nhập nào phù hợp.</i></td></tr>`;
         document.querySelector('.pagination').innerHTML = '';
         return;
     }
 
-    // Tính toán cắt mảng dữ liệu cho trang hiện tại
     let startIndex = (currentOrderPage - 1) * orderRowsPerPage;
     let endIndex = startIndex + orderRowsPerPage;
-    let paginatedData = currentOrderData.slice(startIndex, endIndex);
+    let paginatedData = filteredOrderData.slice(startIndex, endIndex);
 
-    // Vẽ các dòng của trang hiện tại
     tbody.innerHTML = paginatedData.map(po => {
         let badgeClass = "bg-primary";
         if (po.Status === "Completed") badgeClass = "bg-success";
-        else if (po.Status === "Pending Payment") badgeClass = "bg-warning text-dark";
         else if (po.Status === "Draft") badgeClass = "bg-secondary";
         else if (po.Status === "Shipping") badgeClass = "bg-info";
 
@@ -69,7 +98,6 @@ function renderOrderTable() {
             actionButtons += `<button class="btn btn-sm btn-light text-danger" title="Xóa nháp"><i class="fas fa-trash"></i></button>`;
         }
 
-        
         let dateDisplay = 'Đang cập nhật';
         if (po.OrderDate) {
             let d = new Date(po.OrderDate);
@@ -78,7 +106,6 @@ function renderOrderTable() {
 
         return `
         <tr>
-            <td class="ps-3"><input type="checkbox" class="form-check-input"></td>
             <td><strong>${po.PurchaseOrderID}</strong></td>
             <td>${po.SupplierName || po.SupplierID}</td> 
             <td>${po.EmployeeName || po.EmployeeID}</td>
@@ -92,30 +119,26 @@ function renderOrderTable() {
         </tr>`;
     }).join('');
 
-    // Gọi hàm vẽ nút phân trang
     renderOrderPagination();
 }
 
 // ==========================================
-// 3. VẼ CÁC NÚT PHÂN TRANG (Trước 1 2 3 Sau)
+// 3. VẼ CÁC NÚT PHÂN TRANG
 // ==========================================
 function renderOrderPagination() {
-    let totalPages = Math.ceil(currentOrderData.length / orderRowsPerPage);
+    let totalPages = Math.ceil(filteredOrderData.length / orderRowsPerPage);
     let paginationContainer = document.querySelector('.pagination');
     let html = '';
 
-    // Ẩn phân trang nếu chỉ có 1 trang
     if (totalPages <= 1) {
         paginationContainer.innerHTML = '';
         return;
     }
 
-    // Nút "Trước"
     html += `<li class="page-item ${currentOrderPage === 1 ? 'disabled' : ''}">
                 <a class="page-link" href="#" onclick="changeOrderPage(event, ${currentOrderPage - 1})">Trước</a>
              </li>`;
 
-    // Vòng lặp vẽ các số 1, 2, 3...
     for (let i = 1; i <= totalPages; i++) {
         let activeStyle = currentOrderPage === i ? 'style="background-color: #1b45cf; border-color: #1b45cf; color: white;"' : '';
         html += `<li class="page-item ${currentOrderPage === i ? 'active' : ''}">
@@ -123,7 +146,6 @@ function renderOrderPagination() {
                  </li>`;
     }
 
-    // Nút "Sau"
     html += `<li class="page-item ${currentOrderPage === totalPages ? 'disabled' : ''}">
                 <a class="page-link" href="#" onclick="changeOrderPage(event, ${currentOrderPage + 1})">Sau</a>
              </li>`;
@@ -135,22 +157,38 @@ function renderOrderPagination() {
 // 4. SỰ KIỆN KHI BẤM CHUYỂN TRANG
 // ==========================================
 function changeOrderPage(e, page) {
-    e.preventDefault(); // Ngăn web bị giật lên đầu trang khi bấm
-    let totalPages = Math.ceil(currentOrderData.length / orderRowsPerPage);
+    e.preventDefault();
+    let totalPages = Math.ceil(filteredOrderData.length / orderRowsPerPage);
     if (page >= 1 && page <= totalPages) {
         currentOrderPage = page;
-        renderOrderTable(); // Vẽ lại bảng với dữ liệu của trang mới
+        renderOrderTable();
     }
 }
+
 
 // ==========================================
 // MỞ FORM THÊM PHIẾU NHẬP
 // ==========================================
 function openAddOrderModal() {
     document.getElementById('addSupplierID').value = '';
-    document.getElementById('addEmployeeID').value = '';
     document.getElementById('orderDetailArea').innerHTML = '';
-    addDetailRow(); // Mặc định có sẵn 1 dòng trống
+    addDetailRow();
+
+    
+    let empInput = document.getElementById('addEmployeeID');
+    let empIdFromJS = localStorage.getItem('EmployeeID');
+
+    if (empIdFromJS) {
+        empInput.value = empIdFromJS;
+        // Khóa luôn ô nhập, không cho sửa thành mã người khác
+        empInput.setAttribute('readonly', 'true');
+        empInput.classList.add('bg-light');
+    } else {
+        empInput.value = '';
+        empInput.removeAttribute('readonly');
+        empInput.classList.remove('bg-light');
+    }
+
     new bootstrap.Modal(document.getElementById('addOrderModal')).show();
 }
 
@@ -176,7 +214,7 @@ function addDetailRow() {
 }
 
 // ==========================================
-// LƯU PHIẾU NHẬP VÀ CÁC CHI TIẾT (LƯU GỘP)
+// LƯU PHIẾU NHẬP VÀ CÁC CHI TIẾT
 // ==========================================
 async function submitFullOrder() {
     const supplierId = document.getElementById('addSupplierID').value.trim();
@@ -186,7 +224,6 @@ async function submitFullOrder() {
         alert("Vui lòng nhập Mã Nhà cung cấp và Nhân viên!"); return;
     }
 
-    // 1. Gom dữ liệu các dòng chi tiết
     const rows = document.querySelectorAll('.detail-row');
     if (rows.length === 0) {
         alert("Phải có ít nhất 1 sản phẩm nhập!"); return;
@@ -207,7 +244,6 @@ async function submitFullOrder() {
     }
 
     try {
-        // 2. Gọi API Tạo Phiếu Nhập Cha
         const poRes = await fetch('http://127.0.0.1:5000/purchase_orders/add', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -217,13 +253,11 @@ async function submitFullOrder() {
         const poData = await poRes.json();
         if (!poRes.ok) throw new Error(poData.message || "Lỗi tạo phiếu nhập");
 
-        // Lấy mã PO vừa tạo (Nhờ bước 1 sửa Backend)
         const newPoId = poData.PurchaseOrderID;
         if (!newPoId) throw new Error("Backend chưa trả về PurchaseOrderID!");
 
-        // 3. Vòng lặp gọi API Lưu từng dòng Chi tiết
         for (const item of details) {
-            item.PurchaseOrderID = newPoId; // Gắn ID cha vào
+            item.PurchaseOrderID = newPoId;
             const detRes = await fetch('http://127.0.0.1:5000/purchase_order_details/add', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -235,7 +269,7 @@ async function submitFullOrder() {
         }
 
         alert("Tạo phiếu nhập và chi tiết thành công!");
-        location.reload(); // Tải lại trang để thấy dữ liệu mới
+        location.reload();
 
     } catch (err) {
         alert("Lỗi: " + err.message);
@@ -252,7 +286,6 @@ function viewOrderDetail(poId) {
             document.getElementById('detailPoId').innerText = poId;
             const tbody = document.getElementById('detailOrderTableBody');
 
-            // API trả về lỗi hoặc mảng rỗng
             if (data.message || !Array.isArray(data) || data.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Không có dữ liệu chi tiết.</td></tr>`;
             } else {

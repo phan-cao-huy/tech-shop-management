@@ -37,7 +37,7 @@
             <i class="fas fa-file-export"></i>
         </button>
         
-        <button class="btn text-white" title="Tạo đơn mới" style="background-color: #1b45cf; border: none;">
+        <button class="btn text-white" title="Tạo đơn mới" style="background-color: #1b45cf; border: none;"onclick="openAddBillModal()">
             <i class="fas fa-plus-circle fa-lg"></i>
         </button>
     </div>
@@ -49,7 +49,7 @@
             <table class="table table-hover align-middle mb-0" width="100%" cellspacing="0">
                 <thead style="background-color: #f4f6f9; color: #0a2551;">
                     <tr>
-                        <th class="ps-3" width="5%"><input type="checkbox" class="form-check-input"></th>
+                        
                         <th width="12%">Mã Đơn</th>
                         <th width="15%">Khách hàng</th>
                         <th width="15%">Nhân viên tạo</th>
@@ -107,6 +107,51 @@
                 <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Đóng</button>
             </div>
 
+        </div>
+    </div>
+</div>
+//tao don moi
+<div class="modal fade" id="addBillModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-cart-plus me-2"></i>Tạo Đơn Bán Hàng Mới</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="fw-bold form-label">Mã Khách Hàng</label>
+                        <input type="text" class="form-control" id="addCustomerID" placeholder="Bỏ trống nếu vãng lai">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="fw-bold form-label">Mã Nhân Viên</label>
+                        <input type="text" class="form-control" id="addEmployeeID">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="fw-bold form-label">Hình thức thanh toán</label>
+                        <select class="form-select" id="addPayMethod">
+                            <option value="Tiền mặt">Tiền mặt</option>
+                            <option value="Chuyển khoản">Chuyển khoản</option>
+                            <option value="Quẹt thẻ">Quẹt thẻ</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2 mt-4">
+                    <h6 class="fw-bold text-success mb-0"><i class="fas fa-box-open me-2"></i>Sản Phẩm Bán</h6>
+                    <button class="btn btn-sm btn-outline-success" onclick="addBillDetailRow()">
+                        <i class="fas fa-plus"></i> Thêm sản phẩm
+                    </button>
+                </div>
+                
+                <div id="billDetailArea">
+                    </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary px-5" onclick="submitFullBill()">Tạo đơn & Xuất kho</button>
+            </div>
         </div>
     </div>
 </div>

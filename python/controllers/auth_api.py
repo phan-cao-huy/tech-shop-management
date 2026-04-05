@@ -39,7 +39,8 @@ def login():
                 return flask.jsonify({
                     "mess": "Login Successful",
                     "AccountID": account_id,
-                    "Role": role
+                    "Role": role,
+                    "EmployeeID": account[2]
                 }), 200
             else:
                 return flask.jsonify({"mess": "Sai mật khẩu"}), 401

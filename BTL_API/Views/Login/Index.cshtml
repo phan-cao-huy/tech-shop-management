@@ -65,7 +65,9 @@
                     // Lưu thông tin phiên đăng nhập
                     localStorage.setItem('AccountID', result.body.AccountID);
                     localStorage.setItem('Role', result.body.Role);
-
+                        if (result.body.EmployeeID) {
+                            localStorage.setItem('EmployeeID', result.body.EmployeeID);
+                        }
                     // --- ĐIỀU HƯỚNG SAU KHI ĐĂNG NHẬP THÀNH CÔNG ---
                     let userRole = result.body.Role;
 
@@ -74,6 +76,7 @@
                         sessionStorage.removeItem('redirectAfterLogin');
                         window.location.href = redirect;
                     }
+
                     else if (userRole === 'Admin') {
                         window.location.href = '/Admin/Product';
                     }

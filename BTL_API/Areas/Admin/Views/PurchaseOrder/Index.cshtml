@@ -12,12 +12,11 @@
 <div class="row mb-3 align-items-center">
     <div class="col-md-4">
         <div class="input-group">
-            <span class="input-group-text bg-white" style="color: #6c757d;"><i class="fas fa-filter"></i></span>
-            <select class="form-select border-start-0" aria-label="Filter Status">
+            <span class="input-group-text bg-white" style="color: #6c757d;"><i class="fas fa-filter" ></i></span>
+            <select class="form-select border-start-0" aria-label="Filter Status" onchange="filterOrders()" id="filterStatus">
                 <option selected>Tất cả trạng thái...</option>
                 <option value="Completed">Đã nhập kho (Completed)</option>
-                <option value="Shipping">Đang vận chuyển (Shipping)</option>
-                <option value="Pending Payment">Chờ thanh toán (Pending)</option>
+                <option value="Processing">Đang vận chuyển (Shipping)</option>
                 <option value="Draft">Bản nháp (Draft)</option>
             </select>
         </div>
@@ -25,7 +24,7 @@
 
     <div class="col-md-8 d-flex justify-content-end gap-2">
         <div class="input-group" style="max-width: 250px;">
-            <input type="text" class="form-control" placeholder="Tìm mã phiếu..." aria-label="Search">
+            <input type="text" class="form-control" placeholder="Tìm mã phiếu..." aria-label="Search" id="searchOrderInput" oninput="filterOrders()">
             <button class="btn btn-outline-secondary bg-white text-muted" type="button">
                 <i class="fas fa-search"></i>
             </button>
@@ -50,7 +49,7 @@
             <table class="table table-hover align-middle mb-0" width="100%" cellspacing="0">
                 <thead style="background-color: #f4f6f9; color: #0a2551;">
                     <tr>
-                        <th class="ps-3" width="5%"><input type="checkbox" class="form-check-input"></th>
+                     
                         <th width="12%">Mã Phiếu</th>
                         <th width="20%">Nhà cung cấp</th>
                         <th width="15%">Người lập phiếu</th>

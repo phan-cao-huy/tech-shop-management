@@ -68,7 +68,6 @@ function renderBillTable() {
         // Đã thêm thẻ td cho Checkbox và Ngày tạo đơn để khớp với 9 cột HTML
         return `
         <tr>
-            <td class="ps-3"><input type="checkbox" class="form-check-input"></td>
             <td><strong>${bill.BillID}</strong></td>
             <td>${bill.CustomerID || '<span class="text-muted">Khách vãng lai</span>'}</td>
             <td>${bill.EmployeeID || '-'}</td>
@@ -190,4 +189,124 @@ function changeBillPage(e, page) {
     e.preventDefault();
     currentBillPage = page;
     renderBillTable();
+}
+// ==========================================
+// 6. MỞ FORM TẠO ĐƠN HÀNG (TỰ LẤY ID NHÂN VIÊN)
+// ==========================================
+function openAddBillModal() {
+    // Reset form
+    document.getElementById('addCustomerID').value = '';
+    document.getElementById('addPayMethod').value = 'Tiền mặt';
+    document.getElementById('billDetailArea').innerHTML = '';
+    addBillDetailRow(); // Mặc định thêm 1 dòng trống
+
+    // Lấy ID Nhân viên đang đăng nhập từ LocalStorage
+    let empInput = document.getElementById('addEmployeeID');
+    let empIdFromJS = localStorage.getItem('EmployeeID');
+
+    if (empIdFromJS) {
+        empInput.value = empIdFromJS;
+        empInput.setAttribute('readonly', 'true'); // Khóa lại không cho sửa
+        empInput.classList.add('bg-light');
+    } else {
+        empInput.value = '';
+        empInput.removeAttribute('readonly');
+        empInput.classList.remove('bg-light');
+    }
+
+    new bootstrap.Modal(document.getElementById('addBillModal')).show();
+}
+
+// Hàm thêm 1 dòng nhập sản phẩm
+function addBillDetailRow() {
+    const id = Date.now();
+    const html = `
+        <div class="row g-2 mb-2 detail-row align-items-center" id="row-${id}">
+            <div class="col-md-8">
+                <input type="text" class="form-control d-var-id" placeholder="Mã sản phẩm (VD: VAR1)" required>
+            </div>
+            <div class="col-md-3">
+                <input type="number" class="form-control d-num" placeholder="Số lượng" min="1" value="1" required>
+            </div>
+            <div class="col-md-1 text-end">
+                <button class="btn btn-outline-danger" onclick="document.getElementById('row-${id}').remove()"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>
+    `;
+    document.getElementById('billDetailArea').insertAdjacentHTML('beforeend', html);
+}
+
+// ==========================================
+// 7. LƯU ĐƠN HÀNG & CHI TIẾT LÊN SERVER
+// ==========================================
+async function submitFullBill() {
+    const customerId = document.getElementById('addCustomerID').value.trim() || null;
+    const employeeId = document.getElementById('addEmployeeID').value.trim();
+    const payMethod = document.getElementById('addPayMethod').value;
+
+    if (!employeeId) {
+        alert("Thiếu mã nhân viên lập đơn!"); return;
+    }
+
+    // Gom dữ liệu sản phẩm
+    const rows = document.querySelectorAll('.detail-row');
+    if (rows.length === 0) {
+        alert("Đơn hàng phải có ít nhất 1 sản phẩm!"); return;
+    }
+
+    let details = [];
+    let isValid = true;
+    rows.forEach(row => {
+        const vId = row.querySelector('.d-var-id').value.trim();
+        const num = row.querySelector('.d-num').value;
+        if (!vId || !num || num <= 0) isValid = false;
+        details.push({ ProductVariantID: vId, Num: parseInt(num) });
+    });
+
+    if (!isValid) {
+        alert("Vui lòng điền đúng mã sản phẩm và số lượng > 0!"); return;
+    }
+
+    try {
+        // Gọi API Tạo Đơn Bán Hàng gốc
+        const billRes = await fetch('http://127.0.0.1:5000/bills/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                CustomerID: customerId,
+                EmployeeID: employeeId,
+                PaymentMethod: payMethod,
+                Status: 'Draft',
+                TotalPrice: 0 // Ban đầu là 0, API BillDetail sẽ tự cộng dồn vào sau
+            })
+        });
+
+        const billData = await billRes.json();
+        if (!billRes.ok) throw new Error(billData.mess || billData.error || "Lỗi tạo đơn");
+
+        const newBillId = billData.BillID;
+
+        // Chạy vòng lặp thêm từng chi tiết sản phẩm vào đơn
+        for (const item of details) {
+            item.BillID = newBillId;
+            const detRes = await fetch('http://127.0.0.1:5000/bill-details/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(item)
+            });
+
+            // Xử lý nếu mã SP sai hoặc không tồn tại
+            if (!detRes.ok) {
+                const errData = await detRes.json();
+                console.error("Lỗi dòng:", item, errData);
+                alert(`Lỗi khi thêm sản phẩm ${item.ProductVariantID}: ${errData.mess || 'Không xác định'}`);
+            }
+        }
+
+        alert("Tạo đơn hàng thành công!");
+        location.reload(); // Tải lại trang
+
+    } catch (err) {
+        alert("Lỗi: " + err.message);
+    }
 }
