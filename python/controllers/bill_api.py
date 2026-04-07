@@ -172,6 +172,53 @@ def complete_bill(id):
         return flask.jsonify({"error": str(e)}), 500
 
 
+@bill_bp.route('/<id>/deliver', methods=['POST'])
+def deliver_bill(id):
+    try:
+        db_conn = get_connection()
+        cursor = db_conn.cursor()
+
+        cursor.execute("SELECT Status FROM Bill WHERE BillID = ?", (id,))
+        status = cursor.fetchone()
+
+        if not status or status[0] != 'Shipping':
+            return flask.jsonify({"mess": "Chỉ có thể đánh dấu 'Đã giao' cho đơn đang 'Shipping'"}), 400
+
+        # Chuyển sang trạng thái Đã giao (Delivered)
+        # Nếu database của bạn có cột DeliveryDate, hãy update luôn thời gian hiện tại vào đó để làm mốc tính 7 ngày
+        cursor.execute("UPDATE Bill SET Status = 'Delivered' WHERE BillID = ?", (id,))
+        db_conn.commit()
+        return flask.jsonify({"mess": "Đơn hàng đã đến tay khách, bắt đầu tính thời gian đổi trả!"}), 200
+    except Exception as e:
+        db_conn.rollback()
+        return flask.jsonify({"error": str(e)}), 500
+
+
+@bill_bp.route('/<id>/return', methods=['POST'])
+def return_bill(id):
+    try:
+        db_conn = get_connection()
+        cursor = db_conn.cursor()
+
+        cursor.execute("SELECT Status FROM Bill WHERE BillID = ?", (id,))
+        status = cursor.fetchone()
+
+        if not status or status[0] not in ('Delivered', 'Completed'):
+            return flask.jsonify({"mess": "Chỉ có thể trả hàng cho đơn đã giao hoặc hoàn thành."}), 400
+
+        # 1. Hoàn lại số lượng tồn kho
+        cursor.execute("SELECT ProductVariantID, Num FROM BillDetail WHERE BillID = ?", (id,))
+        for val in cursor.fetchall():
+            cursor.execute("UPDATE ProductVariant SET StockQuantity = StockQuantity + ? WHERE ProductVariantID = ?",
+                           (val[1], val[0]))
+
+        # 2. Cập nhật trạng thái thành Returned và Set TotalPrice = 0 (Trường hợp hoàn trả toàn bộ)
+        cursor.execute("UPDATE Bill SET Status = 'Returned', TotalPrice = 0 WHERE BillID = ?", (id,))
+        db_conn.commit()
+        return flask.jsonify({"mess": "Xử lý trả hàng thành công! Đã hoàn kho và trừ doanh thu."}), 200
+    except Exception as e:
+        db_conn.rollback()
+        return flask.jsonify({"error": str(e)}), 500
 @bill_bp.route('/<id>/cancel', methods=['POST'])
 def cancel_bill(id):
     try:

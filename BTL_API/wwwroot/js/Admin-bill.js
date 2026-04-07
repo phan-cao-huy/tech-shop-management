@@ -52,19 +52,26 @@ function renderBillTable() {
 
       
         if (bill.Status === 'Draft') {
-            badge = `<span class="badge text-bg-secondary">Nháp</span>`;
-            actionButtons += `<button class="btn btn-sm btn-light text-primary me-1" title="Chốt đơn & Giao hàng (Trừ kho)" onclick="checkoutBill('${bill.BillID}')"><i class="fas fa-truck"></i></button>`;
+            badge = `<span class="badge bg-warning text-dark">Nháp</span>`;
+            actionButtons += `<button class="btn btn-sm btn-light text-primary me-1" title="Chốt & Giao hàng" onclick="checkoutBill('${bill.BillID}')"><i class="fas fa-truck"></i></button>`;
             actionButtons += `<button class="btn btn-sm btn-light text-danger" title="Hủy đơn" onclick="cancelBill('${bill.BillID}')"><i class="fas fa-times-circle"></i></button>`;
         }
         else if (bill.Status === 'Shipping') {
-            badge = `<span class="badge text-bg-warning">Đang giao</span>`;
-            actionButtons += `<button class="btn btn-sm btn-light text-success me-1" title="Xác nhận Hoàn thành" onclick="completeBill('${bill.BillID}')"><i class="fas fa-check-double"></i></button>`;
-            actionButtons += `<button class="btn btn-sm btn-light text-danger" title="Hủy đơn & Hoàn kho" onclick="cancelBill('${bill.BillID}')"><i class="fas fa-undo"></i></button>`;
+            badge = `<span class="badge bg-info text-dark">Đang giao</span>`;
+            actionButtons += `<button class="btn btn-sm btn-light text-primary me-1" title="Khách đã nhận (Bắt đầu đếm ngược đổi trả)" onclick="deliverBill('${bill.BillID}')"><i class="fas fa-box-open"></i></button>`;
+        }
+        else if (bill.Status === 'Delivered') {
+            badge = `<span class="badge bg-primary">Đã giao (Chờ chốt)</span>`;
+            actionButtons += `<button class="btn btn-sm btn-light text-success me-1" title="Khách chốt / Hết hạn đổi trả" onclick="completeBill('${bill.BillID}')"><i class="fas fa-check-double"></i></button>`;
+            actionButtons += `<button class="btn btn-sm btn-light text-danger" title="Khách trả hàng & Hoàn tiền" onclick="returnBill('${bill.BillID}')"><i class="fas fa-exchange-alt"></i></button>`;
         }
         else if (bill.Status === 'Completed') {
             badge = `<span class="badge bg-success">Hoàn thành</span>`;
-    
-            actionButtons += `<button class="btn btn-sm btn-light text-danger" title="Hủy đơn & Hoàn kho" onclick="cancelBill('${bill.BillID}')"><i class="fas fa-undo"></i></button>`;
+            // Vẫn có thể cho ngoại lệ trả hàng nếu cần, tùy quy định cửa hàng
+            actionButtons += `<button class="btn btn-sm btn-light text-danger" title="Ngoại lệ: Trả hàng" onclick="returnBill('${bill.BillID}')"><i class="fas fa-exchange-alt"></i></button>`;
+        }
+        else if (bill.Status === 'Returned') {
+            badge = `<span class="badge bg-dark">Trả hàng (Đã hoàn kho)</span>`;
         }
         else if (bill.Status === 'Cancelled') {
             badge = `<span class="badge text-bg-danger">Đã hủy</span>`;
@@ -163,6 +170,26 @@ function completeBill(billId) {
             }
         })
         .catch(err => alert("Lỗi kết nối: " + err.message));
+}
+
+function deliverBill(billId) {
+    if (!confirm(`Xác nhận bưu tá đã giao thành công đơn [${billId}]? Đơn sẽ chuyển sang trạng thái chờ đổi trả.`)) return;
+    fetch(`http://127.0.0.1:5000/bills/${billId}/deliver`, { method: 'POST' })
+        .then(res => res.json())
+        .then(result => {
+            if (result.error) alert("Lỗi: " + result.error);
+            else { alert(result.mess); executeBillSearch(); }
+        });
+}
+
+function returnBill(billId) {
+    if (!confirm(`XÁC NHẬN TRẢ HÀNG cho đơn [${billId}]? Hệ thống sẽ CỘNG LẠI TỒN KHO và HỦY DOANH THU đơn này.`)) return;
+    fetch(`http://127.0.0.1:5000/bills/${billId}/return`, { method: 'POST' })
+        .then(res => res.json())
+        .then(result => {
+            if (result.error) alert("Lỗi: " + result.error);
+            else { alert(result.mess); executeBillSearch(); }
+        });
 }
 
 // HỦY ĐƠN 
