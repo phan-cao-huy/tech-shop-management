@@ -16,6 +16,7 @@
             <select class="form-select border-start-0" aria-label="Filter" id="filterBill" onchange="executeBillSearch()">
                 <option value="All" selected>Tất cả trạng thái...</option>
                 <option value="Draft">Nháp (Draft)</option>
+                <option value="Shipping">Đang giao (Shipping)</option>
                 <option value="Completed">Hoàn thành (Completed)</option>
                 <option value="Cancelled">Đã hủy (Cancelled)</option>
             </select>
@@ -24,20 +25,13 @@
 
     <div class="col-md-8 d-flex justify-content-end gap-2">
         <div class="input-group" style="max-width: 250px;">
-            <input type="text" class="form-control" placeholder="Tìm mã đơn..." aria-label="Search" id="billSearchInput" onkeyup="executeBillSearch()" onclick="excuteBillSearch()">
+            <input type="text" class="form-control" placeholder="Tìm mã đơn..." aria-label="Search" id="billSearchInput" onkeyup="executeBillSearch()" onclick="executeBillSearch()">
             <button class="btn btn-outline-secondary bg-white text-muted" type="button">
                 <i class="fas fa-search"></i>
             </button>
         </div>
-        
-        @* <button class="btn btn-secondary text-white" title="Nhập dữ liệu" style="background-color: #6c757d; border: none;">
-            <i class="fas fa-file-import"></i>
-        </button>
-        <button class="btn btn-secondary text-white" title="Xuất Excel" style="background-color: #6c757d; border: none;">
-            <i class="fas fa-file-export"></i>
-        </button> *@
-        
-        <button class="btn text-white" title="Tạo đơn mới" style="background-color: #1b45cf; border: none;"onclick="openAddBillModal()">
+
+        <button class="btn text-white" title="Tạo đơn mới" style="background-color: #1b45cf; border: none;" onclick="openAddBillModal()">
             <i class="fas fa-plus-circle fa-lg"></i>
         </button>
     </div>
@@ -49,7 +43,6 @@
             <table class="table table-hover align-middle mb-0" width="100%" cellspacing="0">
                 <thead style="background-color: #f4f6f9; color: #0a2551;">
                     <tr>
-                        
                         <th width="12%">Mã Đơn</th>
                         <th width="15%">Khách hàng</th>
                         <th width="15%">Nhân viên tạo</th>
@@ -61,27 +54,25 @@
                     </tr>
                 </thead>
                 <tbody id="billTableBody">
-                   
                 </tbody>
             </table>
         </div>
     </div>
-    
+
     <div class="card-footer bg-white py-3">
         <ul class="pagination justify-content-end mb-0" id="billPagination"></ul>
     </div>
 </div>
+
 <div class="modal fade" id="viewBillDetailModal" tabindex="-1" aria-labelledby="viewBillDetailModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow">
-
             <div class="modal-header text-white" style="background-color: #0a2551;">
                 <h5 class="modal-title fw-bold" id="viewBillDetailModalLabel">
                     <i class="fas fa-receipt me-2"></i>Chi tiết Hóa Đơn: <span id="detailBillId" class="text-warning"></span>
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-
             <div class="modal-body p-4">
                 <div class="table-responsive">
                     <table class="table table-bordered table-hover align-middle">
@@ -97,22 +88,16 @@
                         </tbody>
                     </table>
                 </div>
-
                 <div class="d-flex justify-content-end mt-3 border-top pt-3">
                     <h5 class="mb-0">Tổng thanh toán: <span id="detailTotalPrice" class="text-danger fw-bold ms-2">0đ</span></h5>
                 </div>
             </div>
-
             <div class="modal-footer bg-light">
                 <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Đóng</button>
             </div>
-
         </div>
     </div>
 </div>
-
-
-
 
 <div class="modal fade" id="addBillModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -147,9 +132,9 @@
                         <i class="fas fa-plus"></i> Thêm sản phẩm
                     </button>
                 </div>
-                
+
                 <div id="billDetailArea">
-                    </div>
+                </div>
             </div>
             <div class="modal-footer bg-light">
                 <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Hủy</button>
@@ -158,6 +143,7 @@
         </div>
     </div>
 </div>
+
 @section Scripts {
     <script src="~/js/Admin-bill.js" asp-append-version="true"></script>
 }
@@ -167,11 +153,13 @@
         border: 1px solid #dee2e6;
         padding: 8px 16px;
     }
+
     .pagination .page-item.active .page-link {
         background-color: #1b45cf;
         border-color: #1b45cf;
         color: white;
     }
+
     .pagination .page-item.disabled .page-link {
         color: #6c757d;
         pointer-events: none;

@@ -1,11 +1,9 @@
-﻿
-//  CÁC BIẾN TOÀN CỤC CHO PHÂN TRANG 
-let currentBillData = [];
+﻿let currentBillData = [];
 let currentBillPage = 1;
 const billRowsPerPage = 5;
 
 document.addEventListener("DOMContentLoaded", function () {
-    executeBillSearch(); // Gọi đúng tên hàm
+    executeBillSearch();
 });
 
 function executeBillSearch() {
@@ -24,12 +22,11 @@ function executeBillSearch() {
                 data = data.filter(bill =>
                     (bill.BillID && bill.BillID.toLowerCase().includes(kw)) ||
                     (bill.CustomerID && bill.CustomerID.toLowerCase().includes(kw)) ||
-
-                    (bill.CustomerName && bill.CustomerName.toLowerCase().includes(kw)) || 
-                    (bill.EmployeeName && bill.EmployeeName.toLowerCase().includes(kw))) 
-
+                    (bill.CustomerName && bill.CustomerName.toLowerCase().includes(kw)) ||
+                    (bill.EmployeeName && bill.EmployeeName.toLowerCase().includes(kw))
+                )
             }
-            currentBillData = data; 
+            currentBillData = data;
             currentBillPage = 1;
             renderBillTable();
         })
@@ -53,20 +50,28 @@ function renderBillTable() {
         let badge = '';
         let actionButtons = `<button class="btn btn-sm btn-light text-primary me-1" title="Xem chi tiết" onclick="viewBillDetails('${bill.BillID}', ${bill.TotalPrice})"><i class="fas fa-eye"></i></button>`;
 
+        // UPDATE LOGIC TRẠNG THÁI TẠI ĐÂY
         if (bill.Status === 'Draft') {
             badge = `<span class="badge bg-warning text-dark">Nháp (Draft)</span>`;
-            actionButtons += `<button class="btn btn-sm btn-light text-success me-1" title="Duyệt đơn (Checkout)" onclick="checkoutBill('${bill.BillID}')"><i class="fas fa-check-circle"></i></button>`;
+            actionButtons += `<button class="btn btn-sm btn-light text-primary me-1" title="Chốt đơn & Giao hàng (Trừ kho)" onclick="checkoutBill('${bill.BillID}')"><i class="fas fa-truck"></i></button>`;
             actionButtons += `<button class="btn btn-sm btn-light text-danger" title="Hủy đơn" onclick="cancelBill('${bill.BillID}')"><i class="fas fa-times-circle"></i></button>`;
-        } else if (bill.Status === 'Completed') {
-            badge = `<span class="badge bg-success">Hoàn thành</span>`;
+        }
+        else if (bill.Status === 'Shipping') {
+            badge = `<span class="badge bg-info text-dark">Đang giao</span>`;
+            actionButtons += `<button class="btn btn-sm btn-light text-success me-1" title="Xác nhận Hoàn thành" onclick="completeBill('${bill.BillID}')"><i class="fas fa-check-double"></i></button>`;
             actionButtons += `<button class="btn btn-sm btn-light text-danger" title="Hủy đơn & Hoàn kho" onclick="cancelBill('${bill.BillID}')"><i class="fas fa-undo"></i></button>`;
-        } else if (bill.Status === 'Cancelled') {
+        }
+        else if (bill.Status === 'Completed') {
+            badge = `<span class="badge bg-success">Hoàn thành</span>`;
+            // Cân nhắc có cho phép hủy khi đã hoàn thành không (nếu có thì giữ nút này)
+            actionButtons += `<button class="btn btn-sm btn-light text-danger" title="Hủy đơn & Hoàn kho" onclick="cancelBill('${bill.BillID}')"><i class="fas fa-undo"></i></button>`;
+        }
+        else if (bill.Status === 'Cancelled') {
             badge = `<span class="badge bg-secondary">Đã hủy</span>`;
         }
 
         let orderDate = bill.DateOrder ? new Date(bill.DateOrder).toLocaleString('vi-VN') : '-';
 
-        // Tạo giao diện Tên in đậm, Mã in mờ bên dưới
         let customerDisplay = bill.CustomerName
             ? `<strong>${bill.CustomerName}</strong><br><small class="text-muted">${bill.CustomerID}</small>`
             : `<span class="text-muted">Khách vãng lai</span>`;
@@ -90,11 +95,11 @@ function renderBillTable() {
 
     renderBillPagination();
 }
-//XEM CHI TIẾT ĐƠN HÀNG 
 
+// XEM CHI TIẾT ĐƠN HÀNG 
 function viewBillDetails(billId, totalPrice) {
     document.getElementById('detailBillId').innerText = billId;
-    document.getElementById('detailTotalPrice').innerText = totalPrice.toLocaleString() + 'đ';
+    document.getElementById('detailTotalPrice').innerText = (totalPrice || 0).toLocaleString() + 'đ';
 
     fetch(`http://127.0.0.1:5000/bill-details/get/${billId}`)
         .then(res => res.json())
@@ -123,30 +128,46 @@ function viewBillDetails(billId, totalPrice) {
         .catch(err => alert("Lỗi khi lấy chi tiết đơn hàng!"));
 }
 
-
-// DUYỆT ĐƠN 
+// DUYỆT ĐƠN SANG TRẠNG THÁI ĐANG GIAO
 function checkoutBill(billId) {
-    if (!confirm(`Xác nhận duyệt và xuất kho cho đơn hàng [${billId}]?`)) return;
+    if (!confirm(`Xác nhận chốt đơn [${billId}]? Thao tác này sẽ TRỪ TỒN KHO và chuyển trạng thái sang Đang giao.`)) return;
 
     fetch(`http://127.0.0.1:5000/bills/${billId}/checkout`, { method: 'POST' })
         .then(res => res.json())
         .then(result => {
-            if (result.mess && result.mess.includes("out of stock")) {
-                alert("Thất bại: Có sản phẩm trong đơn đã HẾT HÀNG trong kho!");
+            if (result.mess && result.mess.includes("không đủ số lượng")) {
+                alert("Thất bại: " + result.mess);
             } else if (result.error) {
                 alert("Lỗi Server: " + result.error);
             } else {
-                alert("Duyệt đơn thành công! Đã trừ tồn kho.");
-                executeBillSearch(); 
+                alert("Đã chốt đơn và bắt đầu giao hàng!");
+                executeBillSearch();
             }
         });
 }
 
+// XÁC NHẬN HOÀN THÀNH (HÀM MỚI)
+function completeBill(billId) {
+    if (!confirm(`Xác nhận khách hàng đã nhận được đơn [${billId}] thành công?`)) return;
+
+    fetch(`http://127.0.0.1:5000/bills/${billId}/complete`, { method: 'POST' })
+        .then(res => res.json())
+        .then(result => {
+            if (result.error) {
+                alert("Lỗi Server: " + result.error);
+            } else if (result.mess && result.mess.includes("Chỉ có thể")) {
+                alert("Lỗi: " + result.mess);
+            } else {
+                alert("Xác nhận hoàn thành đơn hàng!");
+                executeBillSearch();
+            }
+        })
+        .catch(err => alert("Lỗi kết nối: " + err.message));
+}
 
 // HỦY ĐƠN 
-
 function cancelBill(billId) {
-    if (!confirm(`Bạn có chắc chắn muốn HỦY đơn hàng [${billId}]? Nếu đơn đã duyệt, tồn kho sẽ được cộng lại.`)) return;
+    if (!confirm(`Bạn có chắc chắn muốn HỦY đơn hàng [${billId}]? Nếu đơn đang giao hoặc đã hoàn thành, tồn kho sẽ được cộng lại.`)) return;
 
     fetch(`http://127.0.0.1:5000/bills/${billId}/cancel`, { method: 'POST' })
         .then(res => res.json())
@@ -154,15 +175,13 @@ function cancelBill(billId) {
             if (result.error) {
                 alert("Lỗi: " + result.error);
             } else {
-                alert("Đã hủy đơn hàng thành công!");
+                alert(result.mess || "Đã hủy đơn hàng thành công!");
                 executeBillSearch();
             }
         });
 }
 
-
 // PHÂN TRANG 
-
 function renderBillPagination() {
     let totalPages = Math.ceil(currentBillData.length / billRowsPerPage);
     let html = '';
@@ -172,13 +191,11 @@ function renderBillPagination() {
         return;
     }
 
-    // Nút "Trước"
     html += `
         <li class="page-item ${currentBillPage === 1 ? 'disabled' : ''}">
             <a class="page-link" href="#" onclick="changeBillPage(event, ${currentBillPage - 1})">Trước</a>
         </li>`;
 
-    // Các nút số trang
     for (let i = 1; i <= totalPages; i++) {
         html += `
             <li class="page-item ${i === currentBillPage ? 'active' : ''}">
@@ -186,7 +203,6 @@ function renderBillPagination() {
             </li>`;
     }
 
-    // Nút "Sau"
     html += `
         <li class="page-item ${currentBillPage === totalPages ? 'disabled' : ''}">
             <a class="page-link" href="#" onclick="changeBillPage(event, ${currentBillPage + 1})">Sau</a>
@@ -200,22 +216,20 @@ function changeBillPage(e, page) {
     currentBillPage = page;
     renderBillTable();
 }
+
 // MỞ FORM TẠO ĐƠN HÀNG 
-
 function openAddBillModal() {
-    // Reset form
     document.getElementById('addCustomerID').value = '';
-    document.getElementById('addPayMethod').value = 'Cash';
+    document.getElementById('addPayMethod').value = 'Tiền mặt';
     document.getElementById('billDetailArea').innerHTML = '';
-    addBillDetailRow(); 
+    addBillDetailRow();
 
-    // Lấy ID Nhân viên 
     let empInput = document.getElementById('addEmployeeID');
     let empIdFromJS = localStorage.getItem('EmployeeID');
 
     if (empIdFromJS) {
         empInput.value = empIdFromJS;
-        empInput.setAttribute('readonly', 'true'); 
+        empInput.setAttribute('readonly', 'true');
         empInput.classList.add('bg-light');
     } else {
         empInput.value = '';
@@ -226,7 +240,6 @@ function openAddBillModal() {
     new bootstrap.Modal(document.getElementById('addBillModal')).show();
 }
 
-// Hàm thêm 1 dòng nhập sản phẩm
 function addBillDetailRow() {
     const id = Date.now();
     const html = `
@@ -246,7 +259,6 @@ function addBillDetailRow() {
 }
 
 // LƯU ĐƠN HÀNG & CHI TIẾT LÊN SERVER
-
 async function submitFullBill() {
     const customerId = document.getElementById('addCustomerID').value.trim() || null;
     const employeeId = document.getElementById('addEmployeeID').value.trim();
@@ -256,7 +268,6 @@ async function submitFullBill() {
         alert("Thiếu mã nhân viên lập đơn!"); return;
     }
 
-    // Gom dữ liệu sản phẩm
     const rows = document.querySelectorAll('.detail-row');
     if (rows.length === 0) {
         alert("Đơn hàng phải có ít nhất 1 sản phẩm!"); return;
@@ -276,7 +287,6 @@ async function submitFullBill() {
     }
 
     try {
-        
         const billRes = await fetch('http://127.0.0.1:5000/bills/add', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -285,7 +295,7 @@ async function submitFullBill() {
                 EmployeeID: employeeId,
                 PaymentMethod: payMethod,
                 Status: 'Draft',
-                TotalPrice: 0 
+                TotalPrice: 0
             })
         });
 
@@ -294,7 +304,6 @@ async function submitFullBill() {
 
         const newBillId = billData.BillID;
 
-   
         for (const item of details) {
             item.BillID = newBillId;
             const detRes = await fetch('http://127.0.0.1:5000/bill-details/add', {
@@ -303,7 +312,6 @@ async function submitFullBill() {
                 body: JSON.stringify(item)
             });
 
-           
             if (!detRes.ok) {
                 const errData = await detRes.json();
                 console.error("Lỗi dòng:", item, errData);
@@ -311,7 +319,7 @@ async function submitFullBill() {
             }
         }
 
-        alert("Tạo đơn hàng thành công!");
+        alert("Tạo đơn hàng nháp thành công!");
         location.reload();
 
     } catch (err) {
