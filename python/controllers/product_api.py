@@ -118,27 +118,31 @@ def update_product(ID):
     db_conn = get_connection()
     cursor = db_conn.cursor()
     try:
+
         ProductName = flask.request.json.get("ProductName")
         Brand = flask.request.json.get("Brand")
         CategoryID = flask.request.json.get("CategoryID")
         Images = flask.request.json.get("Images")
 
         info_dict = flask.request.json.copy()
-        main_columns = ["ProductID", "ProductName", "Brand", "CategoryID", "Images"]
-        for col in main_columns:
+        for col in ["ProductID", "ProductName", "Brand", "CategoryID", "Images"]:
             info_dict.pop(col, None)
 
-        Information = json.dumps(info_dict, ensure_ascii=False) if info_dict else None
+        final_info = {}
+        if "Information" in info_dict:
+            fe_info = info_dict.pop("Information")
+            if isinstance(fe_info, str):
+                try:
+                    final_info = json.loads(fe_info)
+                except json.JSONDecodeError:
+                    final_info = {} 
+            elif isinstance(fe_info, dict):
+                final_info = fe_info
+                
+        final_info.update(info_dict)
+        
+        Information = json.dumps(final_info, ensure_ascii=False) if final_info else None
 
-        cursor.execute("SELECT ProductID FROM Product WHERE ProductID = ?", (ID,))
-        if not cursor.fetchone():
-            return flask.jsonify({"message": "Product not found!"}), 404
-
-        cursor.execute("SELECT CategoryID FROM Category WHERE CategoryID = ?", (CategoryID,))
-        if not cursor.fetchone():
-            return flask.jsonify({"message": "Category does not exist!"}), 400
-
-        # SỬA LỖI: Cột Images (có s)
         query = """
                 UPDATE Product 
                 SET ProductName = ?, Brand = ?, Images = ?, Information = ?, CategoryID = ?
@@ -150,7 +154,12 @@ def update_product(ID):
         return flask.jsonify({"message": "Update Success!"}), 200
 
     except Exception as e:
+        db_conn.rollback()
         return flask.jsonify({"error": str(e)}), 500
+        
+    finally:
+        cursor.close()
+        db_conn.close()
 
 
 @product_bp.route('/delete/<ID>', methods=['DELETE'])
