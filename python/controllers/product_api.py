@@ -76,21 +76,31 @@ def add_product():
     db_conn = get_connection()
     cursor = db_conn.cursor()
     try:
-        ProductID = generate_new_id(cursor, "Product", "ProductID", "PROD")
-
         ProductName = flask.request.json.get("ProductName")
+        CategoryID = flask.request.json.get("CategoryID")        
         Brand = flask.request.json.get("Brand")
-        CategoryID = flask.request.json.get("CategoryID")
-        # Đã đổi thành Images để Frontend truyền lên cho chuẩn
         Images = flask.request.json.get("Images")
+
         info_dict = flask.request.json.copy()
-
         main_columns = ["ProductID", "ProductName", "Brand", "CategoryID", "Images"]
-
         for col in main_columns:
             info_dict.pop(col, None)
 
-        Information = json.dumps(info_dict, ensure_ascii=False) if info_dict else None
+        final_info = {}
+        if "Information" in info_dict:
+            fe_info = info_dict.pop("Information")
+            if isinstance(fe_info, str):
+                try:
+                    final_info = json.loads(fe_info)
+                except json.JSONDecodeError:
+                    final_info = {} 
+            elif isinstance(fe_info, dict):
+                final_info = fe_info
+                
+        final_info.update(info_dict)
+        Information = json.dumps(final_info, ensure_ascii=False) if final_info else None
+
+        ProductID = generate_new_id(cursor, "Product", "ProductID", "PROD")
 
         cursor.execute("SELECT ProductID FROM Product WHERE ProductID = ?", (ProductID,))
         if cursor.fetchone():
@@ -100,17 +110,21 @@ def add_product():
         if not cursor.fetchone():
             return flask.jsonify({"message": "Category does not exist!"}), 400
 
-        # SỬA LỖI: Cột Images (có s)
         query = """
                 INSERT INTO Product (ProductID, ProductName, Brand, Images, Information, CategoryID) 
                 VALUES (?, ?, ?, ?, ?, ?)
                 """
-
         cursor.execute(query, (ProductID, ProductName, Brand, Images, Information, CategoryID))
         db_conn.commit()
-        return flask.jsonify({"message": "Success!"}), 201
+        
+        return flask.jsonify({"message": "Success!", "ProductID": ProductID}), 201
+
     except Exception as e:
-        return flask.jsonify({"error": str(e)}), 500
+        db_conn.rollback()
+        return flask.jsonify({"error": str(e)}), 500        
+    finally:
+        cursor.close()
+        db_conn.close()
 
 
 @product_bp.route('/update/<ID>', methods=['PUT'])
