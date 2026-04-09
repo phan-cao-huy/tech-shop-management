@@ -1,5 +1,25 @@
 /* ===== CellTech Store — Orders ===== */
 
+function buildStatusTimeline(status) {
+    const steps = [
+        { key: 'pending',    icon: 'bi-clock',         label: 'Chờ xác nhận' },
+        { key: 'confirmed',  icon: 'bi-check-circle',  label: 'Đã xác nhận' },
+        { key: 'packaging',  icon: 'bi-box',           label: 'Đang đóng gói' },
+        { key: 'packaged',   icon: 'bi-box-seam',      label: 'Đã đóng gói' },
+        { key: 'in_transit', icon: 'bi-truck',         label: 'Đang giao hàng' },
+        { key: 'completed',  icon: 'bi-check2-circle', label: 'Hoàn thành' },
+    ];
+    const s = (status || '').toLowerCase();
+    if (s === 'cancelled') {
+        return '<div class="order-timeline-cancelled"><i class="bi bi-x-circle-fill"></i> Đơn hàng đã bị hủy</div>';
+    }
+    const currentIdx = steps.findIndex(st => st.key === s);
+    return `<div class="order-timeline">${steps.map((step, i) => {
+        const cls = i < currentIdx ? 'step-done' : (i === currentIdx ? 'step-current' : 'step-upcoming');
+        return `<div class="timeline-step ${cls}"><div class="step-icon"><i class="bi ${step.icon}"></i></div><div class="step-label">${step.label}</div></div>`;
+    }).join('')}</div>`;
+}
+
 async function loadOrdersPage() {
     const container = document.getElementById('ordersContainer');
     if (!container) return;
@@ -48,34 +68,75 @@ async function loadOrdersPage() {
             }
         }));
 
-        container.innerHTML = billsWithDetails.map(bill => {
-            const statusClass = (bill.Status || '').toLowerCase() === 'completed' ? 'status-completed'
-                : (bill.Status || '').toLowerCase() === 'cancelled' ? 'status-cancelled'
-                : 'status-draft';
-            const statusText = (bill.Status || '').toLowerCase() === 'completed' ? 'Hoàn thành'
-                : (bill.Status || '').toLowerCase() === 'cancelled' ? 'Đã hủy'
-                : 'Đang xử lý';
+        // Filter bar
+        const filterHtml = `<div class="orders-filter-bar">
+            <label class="filter-label" for="orderStatusFilter"><i class="bi bi-funnel"></i> Lọc theo trạng thái</label>
+            <select class="filter-select" id="orderStatusFilter" onchange="renderOrders()">
+                <option value="">Tất cả</option>
+                <option value="pending">Chờ xác nhận</option>
+                <option value="confirmed">Đã xác nhận</option>
+                <option value="packaging">Đang đóng gói</option>
+                <option value="packaged">Đã đóng gói</option>
+                <option value="in_transit">Đang giao hàng</option>
+                <option value="completed">Hoàn thành</option>
+                <option value="cancelled">Đã hủy</option>
+            </select>
+        </div>
+        <div id="ordersListContainer"></div>`;
+
+        container.innerHTML = filterHtml;
+
+        const activeStatuses = ['pending', 'confirmed', 'packaging', 'packaged', 'in_transit'];
+        window._allBillsWithDetails = billsWithDetails;
+        window.renderOrders = function () {
+            const filterVal = (document.getElementById('orderStatusFilter')?.value || '').toLowerCase();
+            const filtered = filterVal ? billsWithDetails.filter(b => (b.Status || '').toLowerCase() === filterVal) : billsWithDetails;
+            const listContainer = document.getElementById('ordersListContainer');
+            if (!listContainer) return;
+
+            if (filtered.length === 0) {
+                listContainer.innerHTML = `<div class="cart-empty"><i class="bi bi-search"></i><h3>Không có đơn hàng</h3><p>Không tìm thấy đơn hàng nào với trạng thái này.</p></div>`;
+                return;
+            }
+
+            listContainer.innerHTML = filtered.map(bill => {
+            let statusClass = 'status-draft';
+            let statusText = 'Đang xử lý';
+            const s = (bill.Status || '').toLowerCase();
+            if (s === 'pending') { statusClass = 'status-pending'; statusText = 'Chờ xác nhận'; }
+            else if (s === 'confirmed') { statusClass = 'status-confirmed'; statusText = 'Đã xác nhận'; }
+            else if (s === 'packaging') { statusClass = 'status-packaging'; statusText = 'Đang đóng gói'; }
+            else if (s === 'packaged') { statusClass = 'status-packaged'; statusText = 'Đã đóng gói'; }
+            else if (s === 'in_transit') { statusClass = 'status-in-transit'; statusText = 'Đang giao hàng'; }
+            else if (s === 'completed') { statusClass = 'status-completed'; statusText = 'Hoàn thành'; }
+            else if (s === 'cancelled') { statusClass = 'status-cancelled'; statusText = 'Đã hủy'; }
+
             const dateStr = bill.DateOrder ? new Date(bill.DateOrder).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
             const payMethodText = (bill.PayMethod || '').toLowerCase() === 'transfer' ? 'Chuyển khoản' : 'Tiền mặt';
             const itemCount = bill.details.reduce((s, d) => s + (d.Num || 0), 0);
+            const customerName = bill.CustomerName || 'Chưa cập nhật';
+            const customerPhone = bill.CustomerPhone || 'Chưa cập nhật';
+            const customerAddress = bill.CustomerAddress || 'Chưa cập nhật';
+
+            const liveClass = activeStatuses.includes(s) ? ' status-live' : '';
 
             return `
-            <div class="order-card">
+            <div class="order-card${s === 'cancelled' ? ' order-card--cancelled' : ''}">
                 <div class="order-card-header">
                     <div>
-                        <span class="order-id">Đơn hàng #${escapeHtml(bill.BillID)}</span>
+                        <span class="order-id">#${escapeHtml(bill.BillID)}</span>
                         <span class="order-date" style="margin-left:.75rem">${dateStr}</span>
                     </div>
-                    <span class="order-status ${statusClass}">${statusText}</span>
+                    <span class="order-status ${statusClass}${liveClass}">${statusText}</span>
                 </div>
                 <div class="order-card-body">
                     ${bill.details.map(d => {
-                        const img = d.Image || PLACEHOLDER_IMG;
-                        const name = d.ProductName || d.ProductVariantID || '';
-                        const color = d.Color || '';
-                        const version = d.VariantVersion || '';
-                        const subtotal = (d.Price || 0) * (d.Num || 0);
-                        return `
+                const img = d.Image || PLACEHOLDER_IMG;
+                const name = d.ProductName || d.ProductVariantID || '';
+                const color = d.Color || '';
+                const version = d.VariantVersion || '';
+                const subtotal = (d.Price || 0) * (d.Num || 0);
+                return `
                         <div class="order-detail-item">
                             <img class="order-detail-img" src="${escapeHtml(img)}" alt="" onerror="this.src='${PLACEHOLDER_IMG}'">
                             <div class="order-detail-info">
@@ -85,20 +146,50 @@ async function loadOrdersPage() {
                             </div>
                             <div class="order-detail-subtotal">${formatPrice(subtotal)}</div>
                         </div>`;
-                    }).join('')}
+            }).join('')}
                 </div>
                 <div class="order-card-footer">
                     <div class="order-footer-info">
                         <span class="order-payment"><i class="bi bi-credit-card"></i> ${payMethodText}</span>
-                        <span class="order-item-count">${itemCount} sản phẩm</span>
+                        <span class="order-item-count"><i class="bi bi-box-seam"></i> ${itemCount} sản phẩm</span>
                     </div>
-                    <div class="order-total">Tổng: ${formatPrice(bill.TotalPrice || 0)}</div>
+                    <div class="order-footer-right">
+                        <span class="order-total">${formatPrice(bill.TotalPrice || 0)}</span>
+                        <button class="order-toggle-btn" id="toggle-btn-${escapeHtml(bill.BillID)}" onclick="toggleOrderDetails('${escapeHtml(bill.BillID)}')">
+                            Chi tiết <i class="bi bi-chevron-down chevron"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="order-details-${escapeHtml(bill.BillID)}" style="display:none; border-top:1px solid var(--border-light); background:var(--bg);">
+                    <div style="padding: 1rem 1.25rem 0.75rem;">
+                        <p class="order-detail-section-label"><i class="bi bi-diagram-3"></i> Tiến trình đơn hàng</p>
+                        ${buildStatusTimeline(bill.Status)}
+                    </div>
+                    <div style="padding: 0.75rem 1.25rem 1.25rem; border-top: 1px solid var(--border-light);">
+                        <p class="order-detail-section-label"><i class="bi bi-truck"></i> Thông tin giao hàng</p>
+                        <p style="font-size: 0.83rem; color: var(--text-secondary); margin-bottom: 0.3rem;"><i class="bi bi-person-fill" style="color:var(--primary);margin-right:6px;"></i>${escapeHtml(customerName)}</p>
+                        <p style="font-size: 0.83rem; color: var(--text-secondary); margin-bottom: 0.3rem;"><i class="bi bi-telephone-fill" style="color:var(--primary);margin-right:6px;"></i>${escapeHtml(customerPhone)}</p>
+                        <p style="font-size: 0.83rem; color: var(--text-secondary); margin-bottom: 0;"><i class="bi bi-geo-alt-fill" style="color:var(--primary);margin-right:6px;"></i>${escapeHtml(customerAddress)}</p>
+                    </div>
                 </div>
             </div>`;
-        }).join('');
+            }).join('');
+        };
+
+        window.renderOrders();
 
     } catch (err) {
         console.error(err);
         container.innerHTML = '<p class="text-muted" style="text-align:center;padding:3rem">Không thể tải lịch sử đơn hàng.</p>';
     }
 }
+
+window.toggleOrderDetails = function (billId) {
+    const pane = document.getElementById('order-details-' + billId);
+    const btn  = document.getElementById('toggle-btn-' + billId);
+    if (pane) {
+        const opening = pane.style.display === 'none';
+        pane.style.display = opening ? 'block' : 'none';
+        if (btn) btn.classList.toggle('is-open', opening);
+    }
+};
