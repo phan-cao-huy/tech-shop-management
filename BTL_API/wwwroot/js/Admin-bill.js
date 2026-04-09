@@ -107,10 +107,28 @@ function renderBillTable() {
 
 // XEM CHI TIẾT ĐƠN HÀNG 
 function viewBillDetails(billId, totalPrice) {
+    const bill = currentBillData.find(b => b.BillID === billId) || {};
+
     document.getElementById('detailBillId').innerText = billId;
     document.getElementById('detailTotalPrice').innerText = (totalPrice || 0).toLocaleString() + 'đ';
 
-    fetch(`http://127.0.0.1:5000/bill-details/get/${billId}`)
+    // Customer / shipping info
+    document.getElementById('detailCustomerName').innerText    = bill.CustomerName    || 'Khách vãng lai';
+    document.getElementById('detailCustomerID').innerText      = bill.CustomerID      || '—';
+    document.getElementById('detailCustomerPhone').innerText   = bill.CustomerPhone   || 'Chưa cập nhật';
+    document.getElementById('detailCustomerAddress').innerText = bill.CustomerAddress || 'Chưa cập nhật';
+    document.getElementById('detailEmployeeName').innerText    = bill.EmployeeName    || (bill.EmployeeID || '—');
+    document.getElementById('detailDateOrder').innerText       = bill.DateOrder ? new Date(bill.DateOrder).toLocaleString('vi-VN') : '—';
+    document.getElementById('detailPayMethod').innerText       = bill.PayMethod       || '—';
+
+    const statusMap = {
+        'pending': 'Chờ xác nhận', 'confirmed': 'Đã xác nhận', 'packaging': 'Đang đóng gói',
+        'packaged': 'Đã đóng gói', 'in_transit': 'Đang giao hàng', 'completed': 'Hoàn thành', 'cancelled': 'Đã hủy'
+    };
+    const statusKey = (bill.Status || '').toLowerCase();
+    document.getElementById('detailStatus').innerText = statusMap[statusKey] || (bill.Status || '—');
+
+    fetch(`http://127.0.0.1:5000/bills/bill-details/get/${billId}`)
         .then(res => res.json())
         .then(data => {
             const detailBody = document.getElementById('billDetailTableBody');
