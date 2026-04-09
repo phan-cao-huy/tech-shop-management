@@ -79,7 +79,7 @@ def get_bill_details(BillID):
                 p.ProductName, 
                 pv.Color, 
                 pv.Image,
-                pv.Description AS VariantDescription
+                pv.Version AS VariantVersion
             FROM BillDetail bd
             LEFT JOIN ProductVariant pv ON bd.ProductVariantID = pv.ProductVariantID
             LEFT JOIN Product p ON pv.ProductID = p.ProductID
