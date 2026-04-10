@@ -92,16 +92,29 @@ def delete_customer(id):
         db_conn.rollback()
         return flask.jsonify({"error": str(e)}), 500
 
+
 @customer_bp.route('/search', methods=['POST'])
 def search_customers():
     try:
-        keyword = flask.request.args.get('keyword','' )
+        keyword = flask.request.args.get('keyword', '')
         db_conn = get_connection()
         cursor = db_conn.cursor()
-        sql = "select * from Customer where (IsDeleted = 0 and FullName like ? or Phone like ? or Email like ?) "
+
+        # BẮT BUỘC PHẢI CÓ DẤU NGOẶC ĐƠN Ở ĐOẠN NÀY
+        sql = """
+            SELECT * FROM Customer 
+            WHERE IsDeleted = 0 
+            AND (FullName LIKE ? OR Phone LIKE ? OR Email LIKE ?)
+        """
         search_term = f"%{keyword}%"
-        cursor.execute(sql, (search_term, search_term, search_term, ))
+
+        # Nhớ truyền đủ 3 biến search_term cho 3 dấu chấm hỏi (?)
+        cursor.execute(sql, (search_term, search_term, search_term))
+
         return flask.jsonify(get_json_results(cursor)), 200
+
     except Exception as e:
+        import traceback
+        print(traceback.format_exc())
         return flask.jsonify({'error': str(e)}), 400
 
