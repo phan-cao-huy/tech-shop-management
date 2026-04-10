@@ -98,7 +98,7 @@ def search_customers():
         keyword = flask.request.args.get('keyword','' )
         db_conn = get_connection()
         cursor = db_conn.cursor()
-        sql = "select * from Customer where IsDeleted = 0 and FullName like ? or Phone like ? or Email like ? "
+        sql = "select * from Customer where (IsDeleted = 0 and FullName like ? or Phone like ? or Email like ?) "
         search_term = f"%{keyword}%"
         cursor.execute(sql, (search_term, search_term, search_term, ))
         return flask.jsonify(get_json_results(cursor)), 200

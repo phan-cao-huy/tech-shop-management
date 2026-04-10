@@ -134,7 +134,7 @@ function saveNewCustomer() {
 function deleteCustomer(id) {
     if (!confirm(`Bạn có chắc chắn muốn xóa khách hàng [${id}]?`)) return;
 
-    fetch(`http://127.0.0.1:5000/customers/delete/${id}`, { method: 'DELETE' })
+    fetch(`http://127.0.0.1:5000/customers/delete/${id}`, { method: 'PUT' })
         .then(response => response.json())
         .then(result => {
             if (result.mess === "Delete successful") {

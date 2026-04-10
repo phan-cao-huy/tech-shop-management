@@ -205,7 +205,7 @@ function deleteEmployee(id) {
     }
 
     fetch(`http://127.0.0.1:5000/employees/delete/${id}`, {
-        method: 'DELETE' 
+        method: 'PUT' 
     })
         .then(response => {
             return response.json().then(data => ({ status: response.status, body: data }));
