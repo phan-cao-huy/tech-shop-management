@@ -36,3 +36,5 @@ INSERT INTO PurchaseOrderDetail (PurchaseOrderDetailID, PurchaseOrderID, Product
 ('POD06', 'PO04', 'VAR285', 10, 35000000.00), 
 ('POD07', 'PO05', 'VAR75', 15, 100000.00); 
 GO
+
+select stockquantity from ProductVariant where ProductVariantID = 'VAR83';
