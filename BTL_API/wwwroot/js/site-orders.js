@@ -112,7 +112,9 @@ async function loadOrdersPage() {
             else if (s === 'cancelled') { statusClass = 'status-cancelled'; statusText = 'Đã hủy'; }
 
             const dateStr = bill.DateOrder ? new Date(bill.DateOrder).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
-            const payMethodText = (bill.PayMethod || '').toLowerCase() === 'transfer' ? 'Chuyển khoản' : 'Tiền mặt';
+            const payMethodText = (bill.PayMethod || '').toLowerCase() === 'transfer' ? 'Chuyển khoản'
+                : (bill.PayMethod || '').toLowerCase() === 'paypal' ? 'PayPal'
+                : 'Tiền mặt';
             const itemCount = bill.details.reduce((s, d) => s + (d.Num || 0), 0);
             const customerName = bill.CustomerName || 'Chưa cập nhật';
             const customerPhone = bill.CustomerPhone || 'Chưa cập nhật';
