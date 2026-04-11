@@ -244,6 +244,7 @@ async function placeOrder() {
         const custId = getCustomerID();
         if (!custId) { showToast('Vui lòng đăng nhập lại!', 'danger'); return; }
 
+        const total = getCartTotal();
         const payMethod = document.querySelector('.payment-option.active')?.dataset.method || 'Cash';
 
         if (payMethod === 'Cash') {
@@ -316,49 +317,44 @@ async function placeOrder() {
     }
 }
 
-// ── SePay: show VietQR and poll for payment confirmation ──────────────────
+// ── Bank Transfer: show static VietQR ────────────────────────────────────
 
-async function showTransferPayment(billId, total) {
+function showTransferPayment(billId, total) {
     const container = document.getElementById('checkoutContainer');
     if (!container) return;
-    container.innerHTML = '<div class="spinner" style="margin:2rem auto"></div>';
 
-    try {
-        const info = await apiFetch('/sepay/payment-info/' + encodeURIComponent(billId));
+    const transferContent = 'CELLTECH ' + billId;
+    const qrUrl = 'https://img.vietqr.io/image/TCB-0961978926-compact2.png'
+        + '?amount=' + encodeURIComponent(Math.round(total))
+        + '&addInfo=' + encodeURIComponent(transferContent)
+        + '&accountName=' + encodeURIComponent('VU NHAT THANH');
 
-        container.innerHTML = `
-        <div class="checkout-section text-center" style="max-width:480px;margin:0 auto">
-            <h3><i class="bi bi-bank"></i> Thanh toán chuyển khoản</h3>
-            <p class="text-muted mb-1">Quét mã QR bên dưới để thanh toán
-                <strong>${formatPrice(total)}</strong>
-            </p>
-            <p class="mb-3">Nội dung chuyển khoản bắt buộc:
-                <strong style="color:var(--primary)">${escapeHtml(info.transferContent)}</strong>
-            </p>
-            <img
-                src="${escapeHtml(info.qrUrl)}"
-                alt="QR Code thanh toán"
-                style="max-width:280px;width:100%;border:1px solid var(--border);border-radius:12px;padding:.5rem"
-            >
-            <div class="mt-3" style="font-size:.95rem">
-                <p>Số tài khoản: <strong>${escapeHtml(info.accountNumber)}</strong></p>
-                <p>Chủ tài khoản: <strong>${escapeHtml(info.accountName)}</strong></p>
-            </div>
-            <div id="sePayStatus" class="mt-3">
-                <div class="spinner" style="width:24px;height:24px;border-width:3px;margin:.5rem auto"></div>
-                <p class="text-muted">Đang chờ xác nhận thanh toán...</p>
-            </div>
-            <div class="mt-3">
-                <button class="btn btn-sm btn-outline-secondary" onclick="simulatePayment('${escapeHtml(info.billId)}', this)">
-                    ⚙️ Giả lập thanh toán (Dev)
-                </button>
-            </div>
-        </div>`;
+    container.innerHTML = `
+    <div class="checkout-section text-center" style="max-width:480px;margin:0 auto">
+        <h3><i class="bi bi-bank"></i> Thanh toán chuyển khoản</h3>
+        <p class="text-muted mb-1">Quét mã QR bên dưới để thanh toán
+            <strong>${formatPrice(total)}</strong>
+        </p>
+        <p class="mb-3">Nội dung chuyển khoản bắt buộc:
+            <strong style="color:var(--primary)">${escapeHtml(transferContent)}</strong>
+        </p>
+        <img
+            src="${escapeHtml(qrUrl)}"
+            alt="QR Code thanh toán"
+            style="max-width:280px;width:100%;border:1px solid var(--border);border-radius:12px;padding:.5rem"
+        >
+        <div class="mt-3" style="font-size:.95rem">
+            <p>Ngân hàng: <strong>Techcombank (TCB)</strong></p>
+            <p>Số tài khoản: <strong>0961978926</strong></p>
+            <p>Chủ tài khoản: <strong>VU NHAT THANH</strong></p>
+        </div>
+        <div id="transferStatus" class="mt-3">
+            <div class="spinner" style="width:24px;height:24px;border-width:3px;margin:.5rem auto"></div>
+            <p class="text-muted">Đang chờ xác nhận thanh toán...</p>
+        </div>
+    </div>`;
 
-        pollPaymentStatus(billId);
-    } catch (err) {
-        container.innerHTML = `<p class="text-muted">Lỗi tải thông tin thanh toán: ${escapeHtml(err.message)}</p>`;
-    }
+    pollPaymentStatus(billId);
 }
 
 let _paymentPollTimer = null;
@@ -369,7 +365,7 @@ function pollPaymentStatus(billId) {
             const data = await apiFetch('/bills/' + encodeURIComponent(billId) + '/payment-status');
             if (data.Status && data.Status !== 'Pending') {
                 clearInterval(_paymentPollTimer);
-                const statusDiv = document.getElementById('sePayStatus');
+                const statusDiv = document.getElementById('transferStatus');
                 if (statusDiv) {
                     statusDiv.innerHTML = '<p style="color:var(--success)"><i class="bi bi-check-circle-fill"></i> Thanh toán xác nhận thành công!</p>';
                 }
@@ -382,28 +378,4 @@ function pollPaymentStatus(billId) {
     }, 3000);
 }
 
-async function simulatePayment(billId, btn) {
-    btn.disabled = true;
-    btn.textContent = '⏳ Đang xử lý...';
-    try {
-        const res = await apiPost('/sepay/simulate/' + encodeURIComponent(billId), {});
-        if (res.data && res.data.success) {
-            clearInterval(_paymentPollTimer);
-            const statusDiv = document.getElementById('sePayStatus');
-            if (statusDiv) {
-                statusDiv.innerHTML = '<p style="color:var(--success)"><i class="bi bi-check-circle-fill"></i> Thanh toán xác nhận thành công!</p>';
-            }
-            btn.style.display = 'none';
-            showToast('Thanh toán thành công!', 'success');
-            setTimeout(() => { window.location.href = '/Home/Orders'; }, 2000);
-        } else {
-            showToast(res.data?.message || 'Giả lập thất bại', 'danger');
-            btn.disabled = false;
-            btn.textContent = '⚙️ Giả lập thanh toán (Dev)';
-        }
-    } catch (err) {
-        showToast(err.message || 'Lỗi kết nối', 'danger');
-        btn.disabled = false;
-        btn.textContent = '⚙️ Giả lập thanh toán (Dev)';
-    }
-}
+
