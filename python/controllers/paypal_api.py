@@ -1,6 +1,6 @@
 import flask
 import requests
-from db_config import get_connection
+from db_config import get_connection, generate_new_id
 
 paypal_bp = flask.Blueprint('paypal_bp', __name__)
 
@@ -148,7 +148,7 @@ def capture_order():
         for item in items:
             variant_id = item.get("ProductVariantID")
             num = item.get("Num", 0)
-            bd_id = "BD_" + str(_uuid.uuid4())[:6]
+            bd_id = generate_new_id(cursor, "BillDetail", "BillID", "BILL")
 
             cursor.execute("SELECT SellingPrice FROM ProductVariant WHERE ProductVariantID = ?", (variant_id,))
             price = cursor.fetchone()[0]
