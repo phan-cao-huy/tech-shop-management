@@ -111,6 +111,23 @@ def get_bill_details(BillID):
         return flask.jsonify({"error": str(e)}), 500
 
 
+# ================= PAYMENT STATUS (for Transfer polling) =================
+
+@bill_bp.route('/<id>/payment-status', methods=['GET'])
+def payment_status(id):
+    try:
+        db_conn = get_connection()
+        cursor = db_conn.cursor()
+        cursor.execute("SELECT Status FROM Bill WHERE BillID = ?", (id,))
+        row = cursor.fetchone()
+        cursor.close()
+        if not row:
+            return flask.jsonify({"error": "Bill not found"}), 404
+        return flask.jsonify({"Status": row[0]}), 200
+    except Exception as e:
+        return flask.jsonify({"error": str(e)}), 500
+
+
 # ================= LỘ TRÌNH VẬN HÀNH ĐƠN HÀNG =================
 
 # 1. XÁC NHẬN ĐƠN (Pending -> Confirmed) - TRỪ KHO TẠI ĐÂY

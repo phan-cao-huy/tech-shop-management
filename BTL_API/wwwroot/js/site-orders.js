@@ -157,6 +157,10 @@ async function loadOrdersPage() {
                     </div>
                     <div class="order-footer-right">
                         <span class="order-total">${formatPrice(bill.TotalPrice || 0)}</span>
+                        ${s === 'pending' && (bill.PayMethod || '').toLowerCase() === 'transfer' ? `
+                        <button class="btn btn-sm btn-primary" style="margin-right:.5rem" onclick="openTransferPayment('${escapeHtml(bill.BillID)}', ${bill.TotalPrice || 0})">
+                            <i class="bi bi-qr-code-scan"></i> Thanh toán ngay
+                        </button>` : ''}
                         <button class="order-toggle-btn" id="toggle-btn-${escapeHtml(bill.BillID)}" onclick="toggleOrderDetails('${escapeHtml(bill.BillID)}')">
                             Chi tiết <i class="bi bi-chevron-down chevron"></i>
                         </button>
@@ -194,4 +198,67 @@ window.toggleOrderDetails = function (billId) {
         pane.style.display = opening ? 'block' : 'none';
         if (btn) btn.classList.toggle('is-open', opening);
     }
+};
+
+// ── Bank Transfer: reopen QR from order history ──────────────────────────
+
+let _orderPollTimer = null;
+
+window.openTransferPayment = function (billId, total) {
+    const transferContent = 'CELLTECH ' + billId;
+    const qrUrl = 'https://img.vietqr.io/image/TCB-0961978926-compact2.png'
+        + '?amount=' + encodeURIComponent(Math.round(total))
+        + '&addInfo=' + encodeURIComponent(transferContent)
+        + '&accountName=' + encodeURIComponent('VU NHAT THANH');
+
+    // Remove any existing modal
+    const existing = document.getElementById('transferModal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'transferModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+    modal.innerHTML = `
+    <div style="background:var(--card-bg,#fff);border-radius:16px;padding:2rem;max-width:440px;width:100%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.2);position:relative">
+        <button onclick="closeTransferModal()" style="position:absolute;top:.75rem;right:.75rem;background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--text-muted,#888)">&times;</button>
+        <h4 style="margin-bottom:.5rem"><i class="bi bi-bank"></i> Thanh toán chuyển khoản</h4>
+        <p style="color:var(--text-muted,#666);margin-bottom:.25rem">Quét mã QR để thanh toán <strong>${formatPrice(total)}</strong></p>
+        <p style="margin-bottom:.75rem">Nội dung: <strong style="color:var(--primary,#6c63ff)">${escapeHtml(transferContent)}</strong></p>
+        <img src="${escapeHtml(qrUrl)}" alt="QR thanh toán"
+            style="max-width:260px;width:100%;border:1px solid var(--border,#e0e0e0);border-radius:12px;padding:.4rem">
+        <div style="margin-top:.75rem;font-size:.9rem">
+            <p>Ngân hàng: <strong>Techcombank (TCB)</strong></p>
+            <p>Số tài khoản: <strong>0961978926</strong></p>
+            <p>Chủ tài khoản: <strong>VU NHAT THANH</strong></p>
+        </div>
+        <div id="modalPollStatus" style="margin-top:.75rem">
+            <div class="spinner" style="width:22px;height:22px;border-width:3px;margin:.25rem auto"></div>
+            <p style="color:var(--text-muted,#888);font-size:.9rem">Đang chờ xác nhận thanh toán...</p>
+        </div>
+    </div>`;
+    document.body.appendChild(modal);
+
+    if (_orderPollTimer) clearInterval(_orderPollTimer);
+    _orderPollTimer = setInterval(async () => {
+        try {
+            const data = await apiFetch('/bills/' + encodeURIComponent(billId) + '/payment-status');
+            if (data.Status && data.Status.toLowerCase() !== 'pending') {
+                clearInterval(_orderPollTimer);
+                const statusDiv = document.getElementById('modalPollStatus');
+                if (statusDiv) {
+                    statusDiv.innerHTML = '<p style="color:var(--success,#28a745)"><i class="bi bi-check-circle-fill"></i> Thanh toán xác nhận thành công!</p>';
+                }
+                showToast('Thanh toán thành công!', 'success');
+                setTimeout(() => { window.location.reload(); }, 2000);
+            }
+        } catch (err) {
+            console.error('Poll error:', err);
+        }
+    }, 3000);
+};
+
+window.closeTransferModal = function () {
+    if (_orderPollTimer) { clearInterval(_orderPollTimer); _orderPollTimer = null; }
+    const modal = document.getElementById('transferModal');
+    if (modal) modal.remove();
 };
