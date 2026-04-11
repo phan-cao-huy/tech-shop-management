@@ -15,6 +15,7 @@ from controllers.purchase_order_api import purchase_order_bp
 from controllers.purchase_order_detail_api import purchase_order_detail_bp
 from controllers.report_api import report_bp
 from controllers.supplier_api import supplier_bp
+from controllers.paypal_api import paypal_bp
 
 app = flask.Flask(__name__)
 CORS(app)
@@ -47,6 +48,9 @@ app.register_blueprint(purchase_order_detail_bp, url_prefix='/purchase_order_det
 
 # Nhóm báo cáo thống kê
 app.register_blueprint(report_bp, url_prefix='/reports')
+
+# Nhóm thanh toán PayPal
+app.register_blueprint(paypal_bp, url_prefix='/paypal')
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000, debug=True)

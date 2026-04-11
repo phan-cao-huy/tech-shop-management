@@ -45,6 +45,9 @@ function loadCheckoutPage() {
                     <div class="payment-option" data-method="Transfer">
                         <i class="bi bi-bank"></i> Chuyển khoản
                     </div>
+                    <div class="payment-option" data-method="PayPal">
+                        <i class="bi bi-paypal"></i> PayPal
+                    </div>
                 </div>
             </div>
         </div>
@@ -60,6 +63,7 @@ function loadCheckoutPage() {
             <button class="btn-checkout" id="btnPlaceOrder" onclick="placeOrder()">
                 <i class="bi bi-bag-check"></i> Đặt hàng
             </button>
+            <div id="paypal-button-container" style="display:none;margin-top:1rem"></div>
         </div>
     </div>`;
 
@@ -71,6 +75,7 @@ function loadCheckoutPage() {
         opt.addEventListener('click', () => {
             document.querySelectorAll('.payment-option').forEach(o => o.classList.remove('active'));
             opt.classList.add('active');
+            togglePayPalButton(opt.dataset.method);
         });
     });
 }
@@ -121,6 +126,111 @@ async function loadCustomerInfo() {
     }
 }
 
+// ── PayPal integration ──────────────────────────────────────────
+
+let _paypalSdkLoaded = false;
+
+function togglePayPalButton(method) {
+    const ppContainer = document.getElementById('paypal-button-container');
+    const placeBtn = document.getElementById('btnPlaceOrder');
+    if (!ppContainer) return;
+
+    if (method === 'PayPal') {
+        placeBtn.style.display = 'none';
+        ppContainer.style.display = 'block';
+        ppContainer.innerHTML = `
+            <div class="spinner" style="width:28px;height:28px;border-width:3px;margin:.75rem auto"></div>`;
+        _initPayPalCheckout(ppContainer);
+    } else {
+        placeBtn.style.display = '';
+        ppContainer.style.display = 'none';
+        ppContainer.innerHTML = '';
+    }
+}
+
+async function _initPayPalCheckout(ppContainer) {
+    try {
+        const cart = getCart();
+        if (cart.length === 0) { showToast('Giỏ hàng trống!', 'warning'); return; }
+        const custId = getCustomerID();
+        if (!custId) { showToast('Vui lòng đăng nhập lại!', 'danger'); return; }
+
+        // Just load the SDK — no bill created until after payment
+        await _loadPayPalSdk();
+
+        ppContainer.innerHTML = '';
+        _mountPayPalButtons(ppContainer, custId, cart);
+
+    } catch (err) {
+        console.error('_initPayPalCheckout error:', err);
+        ppContainer.innerHTML = `<p class="text-muted">${escapeHtml(err.message || 'Lỗi khởi tạo PayPal')}</p>`;
+    }
+}
+
+function _loadPayPalSdk() {
+    if (_paypalSdkLoaded || typeof paypal !== 'undefined') {
+        _paypalSdkLoaded = true;
+        return Promise.resolve();
+    }
+    return apiFetch('/paypal/client-id').then(cfg => {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(cfg.clientId)}&currency=USD`;
+            script.onload = () => { _paypalSdkLoaded = true; resolve(); };
+            script.onerror = () => reject(new Error('PayPal SDK failed to load. Check Client ID.'));
+            document.head.appendChild(script);
+        });
+    });
+}
+
+
+function _mountPayPalButtons(ppContainer, custId, cart) {
+    const items = cart.map(i => ({ ProductVariantID: i.variantId, Num: i.qty }));
+
+    paypal.Buttons({
+        style: { layout: 'vertical', color: 'blue', shape: 'rect', label: 'paypal' },
+
+        createOrder: async function () {
+            try {
+                const ppRes = await apiPost('/paypal/create-order', { CustomerID: custId, items });
+                if (ppRes.status !== 200 || !ppRes.data.orderID) {
+                    const errMsg = ppRes.data.error || 'Tạo đơn PayPal thất bại (status ' + ppRes.status + ')';
+                    showToast(errMsg, 'danger');
+                    throw new Error(errMsg);
+                }
+                return ppRes.data.orderID;
+            } catch (err) {
+                const msg = err.message || String(err);
+                showToast('createOrder lỗi: ' + msg, 'danger');
+                throw err;
+            }
+        },
+
+        onApprove: async function (data) {
+            const captureRes = await apiPost('/paypal/capture-order', {
+                orderID: data.orderID,
+                CustomerID: custId,
+                items
+            });
+            if (captureRes.status === 200 && captureRes.data.success) {
+                clearCart();
+                showToast('Thanh toán PayPal thành công!', 'success');
+                setTimeout(() => { window.location.href = '/Home/Orders'; }, 1500);
+            } else {
+                showToast(captureRes.data.error || 'Lỗi xác nhận thanh toán', 'danger');
+            }
+        },
+
+        onError: function (err) {
+            console.error('PayPal onError:', err);
+        },
+
+        onCancel: function () {
+            showToast('Bạn đã hủy thanh toán PayPal.', 'warning');
+        }
+    }).render(ppContainer);
+}
+
 async function placeOrder() {
     const btn = document.getElementById('btnPlaceOrder');
     if (btn.disabled) return;
@@ -136,42 +246,66 @@ async function placeOrder() {
 
         const payMethod = document.querySelector('.payment-option.active')?.dataset.method || 'Cash';
 
-        // 1. Create bill
-        const billRes = await apiPost('/bills/add', {
-            CustomerID: custId,
-            EmployeeID: null,
-            PaymentMethod: payMethod,
-            Status: 'Pending',
-            TotalPrice: 0
-        });
-
-        if (billRes.status !== 200 || !billRes.data.BillID) {
-            throw new Error(billRes.data.mess || billRes.data.error || 'Không thể tạo đơn hàng');
-        }
-
-        const billId = billRes.data.BillID;
-
-        // 2. Add bill details
-        for (const item of cart) {
-            const detailRes = await apiPost('/bill-details/add', {
-                BillID: billId,
-                ProductVariantID: item.variantId,
-                Num: item.qty
+        if (payMethod === 'Cash') {
+            // 1. Create bill as Pending
+            const billRes = await apiPost('/bills/add', {
+                CustomerID: custId,
+                EmployeeID: null,
+                PaymentMethod: 'Cash',
+                Status: 'Pending',
+                TotalPrice: 0
             });
-            if (detailRes.status !== 200) {
-                throw new Error(detailRes.data.mess || 'Lỗi thêm sản phẩm vào đơn hàng');
+            if (billRes.status !== 200 || !billRes.data.BillID) {
+                throw new Error(billRes.data.mess || billRes.data.error || 'Không thể tạo đơn hàng');
             }
-        }
+            const billId = billRes.data.BillID;
 
-        // 3. Confirm order (deduct stock)
-        const checkoutRes = await apiPost('/bills/' + encodeURIComponent(billId) + '/confirm', {});
+            // 2. Add bill details
+            for (const item of cart) {
+                const detailRes = await apiPost('/bill-details/add', {
+                    BillID: billId,
+                    ProductVariantID: item.variantId,
+                    Num: item.qty
+                });
+                if (detailRes.status !== 200) {
+                    throw new Error(detailRes.data.mess || 'Lỗi thêm sản phẩm vào đơn hàng');
+                }
+            }
 
-        if (checkoutRes.status === 200) {
+            // 3. Confirm (deduct stock, set Confirmed)
+            const confirmRes = await apiPost('/bills/' + encodeURIComponent(billId) + '/confirm', {});
+            if (confirmRes.status === 200) {
+                clearCart();
+                showToast('Đặt hàng thành công!', 'success');
+                setTimeout(() => { window.location.href = '/Home/Orders'; }, 1500);
+            } else {
+                throw new Error(confirmRes.data.mess || 'Sản phẩm đã hết hàng');
+            }
+        } else if (payMethod === 'Transfer') {
+            // Transfer: create bill as Pending, wait for SePay webhook
+            const billRes = await apiPost('/bills/add', {
+                CustomerID: custId,
+                EmployeeID: null,
+                PaymentMethod: 'Transfer',
+                Status: 'Pending',
+                TotalPrice: 0
+            });
+            if (billRes.status !== 200 || !billRes.data.BillID) {
+                throw new Error(billRes.data.mess || billRes.data.error || 'Không thể tạo đơn hàng');
+            }
+            const billId = billRes.data.BillID;
+            for (const item of cart) {
+                const detailRes = await apiPost('/bill-details/add', {
+                    BillID: billId,
+                    ProductVariantID: item.variantId,
+                    Num: item.qty
+                });
+                if (detailRes.status !== 200) {
+                    throw new Error(detailRes.data.mess || 'Lỗi thêm sản phẩm vào đơn hàng');
+                }
+            }
             clearCart();
-            showToast('Đặt hàng thành công!', 'success');
-            setTimeout(() => { window.location.href = '/Home/Orders'; }, 1500);
-        } else {
-            throw new Error(checkoutRes.data.mess || 'Sản phẩm đã hết hàng');
+            showTransferPayment(billId, total);
         }
 
     } catch (err) {
@@ -179,5 +313,97 @@ async function placeOrder() {
         showToast(err.message || 'Đã xảy ra lỗi khi đặt hàng', 'danger');
         btn.disabled = false;
         btn.innerHTML = '<i class="bi bi-bag-check"></i> Đặt hàng';
+    }
+}
+
+// ── SePay: show VietQR and poll for payment confirmation ──────────────────
+
+async function showTransferPayment(billId, total) {
+    const container = document.getElementById('checkoutContainer');
+    if (!container) return;
+    container.innerHTML = '<div class="spinner" style="margin:2rem auto"></div>';
+
+    try {
+        const info = await apiFetch('/sepay/payment-info/' + encodeURIComponent(billId));
+
+        container.innerHTML = `
+        <div class="checkout-section text-center" style="max-width:480px;margin:0 auto">
+            <h3><i class="bi bi-bank"></i> Thanh toán chuyển khoản</h3>
+            <p class="text-muted mb-1">Quét mã QR bên dưới để thanh toán
+                <strong>${formatPrice(total)}</strong>
+            </p>
+            <p class="mb-3">Nội dung chuyển khoản bắt buộc:
+                <strong style="color:var(--primary)">${escapeHtml(info.transferContent)}</strong>
+            </p>
+            <img
+                src="${escapeHtml(info.qrUrl)}"
+                alt="QR Code thanh toán"
+                style="max-width:280px;width:100%;border:1px solid var(--border);border-radius:12px;padding:.5rem"
+            >
+            <div class="mt-3" style="font-size:.95rem">
+                <p>Số tài khoản: <strong>${escapeHtml(info.accountNumber)}</strong></p>
+                <p>Chủ tài khoản: <strong>${escapeHtml(info.accountName)}</strong></p>
+            </div>
+            <div id="sePayStatus" class="mt-3">
+                <div class="spinner" style="width:24px;height:24px;border-width:3px;margin:.5rem auto"></div>
+                <p class="text-muted">Đang chờ xác nhận thanh toán...</p>
+            </div>
+            <div class="mt-3">
+                <button class="btn btn-sm btn-outline-secondary" onclick="simulatePayment('${escapeHtml(info.billId)}', this)">
+                    ⚙️ Giả lập thanh toán (Dev)
+                </button>
+            </div>
+        </div>`;
+
+        pollPaymentStatus(billId);
+    } catch (err) {
+        container.innerHTML = `<p class="text-muted">Lỗi tải thông tin thanh toán: ${escapeHtml(err.message)}</p>`;
+    }
+}
+
+let _paymentPollTimer = null;
+
+function pollPaymentStatus(billId) {
+    _paymentPollTimer = setInterval(async () => {
+        try {
+            const data = await apiFetch('/bills/' + encodeURIComponent(billId) + '/payment-status');
+            if (data.Status && data.Status !== 'Pending') {
+                clearInterval(_paymentPollTimer);
+                const statusDiv = document.getElementById('sePayStatus');
+                if (statusDiv) {
+                    statusDiv.innerHTML = '<p style="color:var(--success)"><i class="bi bi-check-circle-fill"></i> Thanh toán xác nhận thành công!</p>';
+                }
+                showToast('Thanh toán thành công!', 'success');
+                setTimeout(() => { window.location.href = '/Home/Orders'; }, 2000);
+            }
+        } catch (err) {
+            console.error('Payment poll error:', err);
+        }
+    }, 3000);
+}
+
+async function simulatePayment(billId, btn) {
+    btn.disabled = true;
+    btn.textContent = '⏳ Đang xử lý...';
+    try {
+        const res = await apiPost('/sepay/simulate/' + encodeURIComponent(billId), {});
+        if (res.data && res.data.success) {
+            clearInterval(_paymentPollTimer);
+            const statusDiv = document.getElementById('sePayStatus');
+            if (statusDiv) {
+                statusDiv.innerHTML = '<p style="color:var(--success)"><i class="bi bi-check-circle-fill"></i> Thanh toán xác nhận thành công!</p>';
+            }
+            btn.style.display = 'none';
+            showToast('Thanh toán thành công!', 'success');
+            setTimeout(() => { window.location.href = '/Home/Orders'; }, 2000);
+        } else {
+            showToast(res.data?.message || 'Giả lập thất bại', 'danger');
+            btn.disabled = false;
+            btn.textContent = '⚙️ Giả lập thanh toán (Dev)';
+        }
+    } catch (err) {
+        showToast(err.message || 'Lỗi kết nối', 'danger');
+        btn.disabled = false;
+        btn.textContent = '⚙️ Giả lập thanh toán (Dev)';
     }
 }
